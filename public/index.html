@@ -1,0 +1,1797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalshi Command — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  :root {
+    --bg-base: #08080b;
+    --bg-card: #111116;
+    --bg-elevated: #18181e;
+    --bg-hover: #1e1e26;
+    --border: #222228;
+    --border-subtle: #1a1a20;
+    --text: #e8e8ee;
+    --text-muted: #8888a0;
+    --text-dim: #55556a;
+    --gold: #E8C547;
+    --gold-dim: #D4A017;
+    --green: #34d399;
+    --green-bg: #0d3320;
+    --red: #f87171;
+    --red-bg: #3d1219;
+    --blue: #60a5fa;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --font: 'DM Sans', system-ui, -apple-system, sans-serif;
+    --mono: 'IBM Plex Mono', 'SF Mono', monospace;
+  }
+  html { font-size: 14px; }
+  body {
+    background: var(--bg-base);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: var(--gold); text-decoration: none; }
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+  /* ─── LOGIN ─── */
+  .login-wrap {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, #13131a 0%, var(--bg-base) 70%);
+    padding: 20px;
+  }
+  .login-card {
+    width: 100%; max-width: 480px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 16px; padding: 40px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .login-header { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
+  .logo-mark {
+    width: 48px; height: 48px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    color: var(--bg-base); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font: 800 24px/1 var(--mono); letter-spacing: -1px;
+    box-shadow: 0 4px 16px rgba(232,197,71,0.25);
+  }
+  .login-header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+  .login-header p { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+  }
+  .field input, .field textarea {
+    width: 100%; background: var(--bg-base); border: 1px solid var(--border);
+    border-radius: 8px; padding: 11px 14px; color: var(--text); font-size: 14px;
+    font-family: var(--font); outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus, .field textarea:focus { border-color: var(--gold); }
+  .field textarea { height: 130px; font-family: var(--mono); font-size: 11px; resize: vertical; }
+
+  .demo-toggle {
+    padding: 12px 14px; background: var(--bg-elevated); border-radius: 8px;
+    border: 1px solid var(--border); margin-bottom: 18px;
+  }
+  .demo-toggle label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; font-weight: 500; }
+  .demo-toggle input[type=checkbox] { accent-color: var(--gold); width: 16px; height: 16px; }
+  .demo-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; padding-left: 24px; }
+
+  .connect-btn {
+    width: 100%; padding: 13px 0;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    color: var(--bg-base); border: none; border-radius: 8px;
+    font: 700 15px/1 var(--font); cursor: pointer;
+    letter-spacing: 0.01em; transition: opacity 0.2s, transform 0.1s;
+    box-shadow: 0 4px 16px rgba(232,197,71,0.2);
+  }
+  .connect-btn:hover { opacity: 0.92; }
+  .connect-btn:active { transform: scale(0.98); }
+  .connect-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .security-note { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 16px; line-height: 1.5; }
+  .file-upload-area {
+    border: 1px dashed var(--border); border-radius: 8px; padding: 16px;
+    text-align: center; cursor: pointer; transition: border-color 0.2s;
+    margin-top: 6px; color: var(--text-muted); font-size: 12px;
+  }
+  .file-upload-area:hover { border-color: var(--gold); }
+  .file-upload-area.has-key { border-color: var(--green); color: var(--green); border-style: solid; }
+
+  /* ─── ERROR ─── */
+  .error-banner {
+    padding: 10px 16px; background: rgba(61,18,25,0.4); border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 8px; color: var(--red); font-size: 13px; display: flex; align-items: center; gap: 8px;
+    margin-top: 14px; word-break: break-word;
+  }
+  .error-bar {
+    margin: 12px 20px 0; padding: 10px 16px; background: rgba(61,18,25,0.2);
+    border: 1px solid rgba(248,113,113,0.15); border-radius: 8px;
+    color: var(--red); font-size: 13px; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ─── HEADER ─── */
+  .app-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 24px; border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-card); position: sticky; top: 0; z-index: 100;
+    flex-wrap: wrap; gap: 10px;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header-logo {
+    width: 32px; height: 32px; background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    color: var(--bg-base); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font: 800 16px/1 var(--mono);
+  }
+  .header-title { font-weight: 700; font-size: 16px; letter-spacing: -0.02em; }
+  .header-env {
+    font: 700 10px/1 var(--mono); color: var(--gold);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .refresh-time { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+
+  .btn-sm {
+    padding: 6px 14px; background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text-muted); font-size: 12px;
+    font-weight: 600; cursor: pointer; font-family: var(--font);
+    display: flex; align-items: center; gap: 5px; transition: all 0.15s;
+  }
+  .btn-sm:hover { background: var(--bg-hover); color: var(--text); }
+  .btn-sm.danger { border-color: var(--red-bg); color: var(--red); }
+  .btn-sm.danger:hover { background: var(--red-bg); }
+
+  /* ─── BALANCE ─── */
+  .balance-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+    gap: 12px; padding: 20px 24px;
+  }
+  .balance-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px;
+  }
+  .balance-label {
+    font-size: 11px; color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.05em; font-weight: 700;
+  }
+  .balance-value {
+    font: 700 28px/1.2 var(--mono); margin-top: 8px;
+    letter-spacing: -0.03em;
+  }
+
+  /* ─── TABS ─── */
+  .tabs {
+    display: flex; gap: 0; padding: 0 24px; border-bottom: 1px solid var(--border-subtle);
+    overflow-x: auto;
+  }
+  .tab {
+    padding: 11px 20px; border: none; background: transparent;
+    color: var(--text-muted); font: 600 13px var(--font); cursor: pointer;
+    border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.15s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+  .content { padding: 20px 24px; max-width: 1400px; }
+
+  .section-title { font-size: 17px; font-weight: 700; margin-bottom: 16px; letter-spacing: -0.01em; }
+
+  .empty-state {
+    text-align: center; padding: 48px 24px; color: var(--text-dim); font-size: 14px;
+    background: rgba(17,17,22,0.5); border-radius: var(--radius);
+    border: 1px dashed var(--border); line-height: 1.6;
+  }
+
+  /* ─── TABLE ─── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; padding: 10px 14px; font-size: 10px; font-weight: 700;
+    color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
+    background: var(--bg-card); border-bottom: 1px solid var(--border);
+  }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(30,30,38,0.4); }
+
+  .ticker {
+    font: 600 11px/1 var(--mono); color: var(--gold);
+    background: rgba(232,197,71,0.08); padding: 3px 7px; border-radius: 4px;
+    display: inline-block;
+  }
+  .mkt-title { font-size: 11px; color: var(--text-muted); margin-top: 3px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .badge {
+    padding: 3px 8px; border-radius: 4px; font: 600 11px/1 var(--mono); display: inline-block;
+  }
+  .badge-yes { background: var(--green-bg); color: var(--green); }
+  .badge-no { background: var(--red-bg); color: var(--red); }
+  .badge-neutral { background: var(--bg-elevated); color: var(--text-muted); }
+  .price-chip {
+    padding: 2px 7px; background: var(--bg-elevated); border-radius: 4px;
+    font: 500 12px/1 var(--mono);
+  }
+
+  .cancel-btn {
+    padding: 4px 10px; background: rgba(61,18,25,0.15); border: 1px solid rgba(248,113,113,0.2);
+    border-radius: 5px; color: var(--red); font-size: 11px; cursor: pointer;
+    font-family: var(--font); font-weight: 600; transition: all 0.15s;
+  }
+  .cancel-btn:hover { background: var(--red-bg); }
+
+  /* ─── COMBOS ─── */
+  .combo-explainer { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; line-height: 1.6; }
+  .combo-card {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 10px; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .combo-card:hover { border-color: #333; }
+  .combo-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; cursor: pointer; flex-wrap: wrap; gap: 12px;
+    transition: background 0.15s;
+  }
+  .combo-header:hover { background: var(--bg-elevated); }
+  .combo-left { display: flex; align-items: flex-start; gap: 10px; }
+  .combo-chevron {
+    display: inline-flex; transition: transform 0.2s ease; margin-top: 2px; color: var(--text-dim);
+  }
+  .combo-chevron.open { transform: rotate(90deg); }
+  .combo-title { font-weight: 700; font-size: 14px; line-height: 1.4; }
+  .combo-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; font-size: 12px; color: var(--text-muted); flex-wrap: wrap; }
+  .leg-count {
+    background: rgba(232,197,71,0.1); color: var(--gold); padding: 1px 8px;
+    border-radius: 4px; font: 600 11px/1.4 var(--mono);
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .status-dot.active { background: var(--gold); }
+  .status-dot.settled { background: var(--green); }
+  .cat-tag { background: var(--bg-elevated); padding: 1px 7px; border-radius: 3px; font-size: 11px; }
+  .combo-right { display: flex; gap: 28px; }
+  .combo-stat { display: flex; flex-direction: column; align-items: flex-end; }
+  .combo-stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+  .combo-stat-val { font: 600 14px/1.4 var(--mono); }
+
+  .combo-legs { border-top: 1px solid var(--border-subtle); background: rgba(12,12,18,0.5); }
+  .leg-row {
+    display: flex; align-items: center; padding: 13px 20px;
+    border-bottom: 1px solid var(--border-subtle); gap: 14px;
+  }
+  .leg-row:last-child { border-bottom: none; }
+  .leg-num { font: 700 10px/1 var(--mono); color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; width: 48px; flex-shrink: 0; }
+  .leg-main { flex: 1; min-width: 0; }
+  .leg-title { font-size: 13px; font-weight: 500; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .leg-details { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .live-price { font: 500 11px/1 var(--mono); color: var(--gold); }
+  .leg-pnl { font: 600 13px/1 var(--mono); flex-shrink: 0; }
+
+  .singles-title { font-size: 15px; font-weight: 700; margin: 32px 0 14px; color: var(--text-muted); }
+  .single-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 14px 20px; }
+  .single-title { font-weight: 600; font-size: 14px; }
+  .single-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .single-right { display: flex; gap: 16px; align-items: center; }
+
+  /* ─── TRADE ─── */
+  .search-section { margin-bottom: 28px; }
+  .search-row { display: flex; gap: 8px; }
+  .search-row input { flex: 1; }
+  .search-btn {
+    padding: 10px 22px; background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font: 600 13px var(--font); cursor: pointer;
+    transition: all 0.15s;
+  }
+  .search-btn:hover { background: var(--bg-hover); }
+  .search-results {
+    margin-top: 8px; background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 8px; max-height: 300px; overflow-y: auto;
+  }
+  .search-result {
+    padding: 10px 14px; border-bottom: 1px solid var(--border-subtle);
+    cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 13px;
+    transition: background 0.1s;
+  }
+  .search-result:hover { background: var(--bg-hover); }
+  .search-result:last-child { border-bottom: none; }
+  .sr-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .order-form {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 28px;
+  }
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 18px; }
+  .toggle-group { display: flex; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); }
+  .toggle-btn {
+    flex: 1; padding: 9px 0; background: var(--bg-base); border: none;
+    color: var(--text-muted); font: 700 12px var(--font); cursor: pointer; transition: all 0.15s;
+  }
+  .toggle-btn.active { background: var(--bg-hover); color: var(--text); }
+  .toggle-btn.active-yes { background: var(--green-bg); color: var(--green); }
+  .toggle-btn.active-no { background: var(--red-bg); color: var(--red); }
+
+  .place-btn {
+    margin-top: 22px; padding: 13px 32px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    color: var(--bg-base); border: none; border-radius: 8px;
+    font: 700 14px var(--font); cursor: pointer; letter-spacing: 0.01em;
+    transition: opacity 0.2s, transform 0.1s;
+    box-shadow: 0 4px 16px rgba(232,197,71,0.15);
+  }
+  .place-btn:hover { opacity: 0.9; }
+  .place-btn:active { transform: scale(0.98); }
+  .place-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .order-result {
+    margin-top: 16px; padding: 12px 16px; border-radius: 8px;
+    border: 1px solid; display: flex; align-items: center; gap: 10px; font-size: 13px;
+    word-break: break-all;
+  }
+  .order-result.success { background: var(--green-bg); border-color: rgba(52,211,153,0.2); color: var(--green); }
+  .order-result.error { background: var(--red-bg); border-color: rgba(248,113,113,0.2); color: var(--red); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    html { font-size: 13px; }
+    .login-card { padding: 24px 18px; max-width: 100%; }
+    .login-header h1 { font-size: 18px; }
+    .logo-mark { width: 40px; height: 40px; font-size: 20px; }
+    .field textarea { height: 100px; }
+
+    .app-header {
+      padding: 10px 14px; gap: 8px;
+      flex-direction: column; align-items: stretch;
+    }
+    .header-left { justify-content: center; }
+    .header-right {
+      justify-content: center; flex-wrap: wrap; gap: 6px;
+    }
+    .header-title { font-size: 14px; }
+    .btn-sm { padding: 6px 10px; font-size: 11px; }
+
+    .balance-row {
+      padding: 12px; gap: 8px;
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .balance-card { padding: 12px 14px; }
+    .balance-value { font-size: 20px; }
+    .balance-label { font-size: 10px; }
+
+    .tabs { padding: 0 12px; gap: 0; }
+    .tab { padding: 10px 12px; font-size: 11px; }
+
+    .content { padding: 12px; }
+    .section-title { font-size: 15px; }
+    .combo-explainer { font-size: 12px; }
+
+    /* Combo cards */
+    .combo-card { border-radius: 8px; }
+    .combo-header {
+      padding: 12px 14px;
+      flex-direction: column; align-items: stretch; gap: 10px;
+    }
+    .combo-left { gap: 8px; }
+    .combo-title { font-size: 12px; line-height: 1.5; }
+    .combo-meta { font-size: 11px; flex-wrap: wrap; }
+    .combo-right {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle);
+    }
+    .combo-stat { align-items: flex-start; }
+    .combo-stat-label { font-size: 9px; }
+    .combo-stat-val { font-size: 12px; }
+
+    /* Leg rows */
+    .leg-row { padding: 10px 14px !important; gap: 10px !important; }
+    .leg-num { width: 36px; font-size: 9px; }
+    .leg-title { font-size: 12px; }
+    .leg-details { gap: 4px; }
+    .ticker { font-size: 9px !important; padding: 2px 4px !important; }
+
+    /* Odds boxes on mobile — stack vertically */
+    .leg-odds-row {
+      margin-left: 36px !important;
+      flex-wrap: wrap; gap: 6px;
+    }
+    .odds-box { flex-shrink: 0; }
+    .odds-side { padding: 4px 8px !important; min-width: 44px !important; }
+    .odds-val { font-size: 12px !important; }
+    .odds-label { font-size: 8px !important; }
+    .odds-mid { padding: 2px 4px !important; font-size: 9px !important; }
+
+    /* Trade buttons — wrap and smaller */
+    .leg-trade-btn { padding: 4px 8px; font-size: 10px; }
+
+    /* Quick trade form */
+    .leg-quick-trade {
+      margin-left: 36px !important;
+      flex-direction: column; align-items: stretch; gap: 8px;
+    }
+    .leg-quick-trade input { width: 100% !important; }
+
+    /* Single positions */
+    .singles-title { font-size: 14px; }
+    .single-title { font-size: 13px; }
+
+    /* Password modal */
+    #password-modal > div { margin: 12px; padding: 20px; }
+  }
+
+  @media (max-width: 420px) {
+    html { font-size: 12px; }
+    .balance-row { grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px; }
+    .balance-value { font-size: 18px; }
+    .app-header { padding: 8px 10px; }
+    .content { padding: 10px; }
+    .combo-header { padding: 10px 12px; }
+    .combo-title { font-size: 11px; }
+    .combo-right { grid-template-columns: 1fr 1fr; gap: 6px; }
+    .leg-odds-row { margin-left: 0 !important; }
+    .leg-num { display: none; }
+    .leg-quick-trade { margin-left: 0 !important; }
+    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab { white-space: nowrap; }
+    .header-right .btn-sm:last-child { display: none; } /* hide Forget button on tiny screens */
+  }
+
+  /* loading spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.6s linear infinite; }
+
+  /* ─── LEG ODDS & QUICK TRADE ─── */
+  .leg-odds-row {
+    display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap;
+  }
+  .odds-box {
+    display: flex; align-items: stretch; border-radius: 6px; overflow: hidden;
+    border: 1px solid var(--border); font-family: var(--mono); font-size: 12px;
+  }
+  .odds-side {
+    padding: 5px 10px; font-weight: 700; text-align: center; min-width: 52px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  }
+  .odds-side .odds-label { font-size: 9px; font-weight: 600; letter-spacing: 0.04em; opacity: 0.7; }
+  .odds-side .odds-val { font-size: 14px; font-weight: 700; }
+  .odds-yes { background: rgba(13,51,32,0.6); color: var(--green); }
+  .odds-no { background: rgba(61,18,25,0.6); color: var(--red); }
+  .odds-mid {
+    padding: 3px 6px; display: flex; align-items: center; font-size: 10px;
+    color: var(--text-dim); background: var(--bg-base);
+  }
+  .leg-trade-btn {
+    padding: 4px 10px; border-radius: 5px; font: 600 11px var(--font);
+    cursor: pointer; border: 1px solid; transition: all 0.15s;
+  }
+  .leg-trade-btn.buy-yes {
+    background: rgba(13,51,32,0.3); border-color: rgba(52,211,153,0.3); color: var(--green);
+  }
+  .leg-trade-btn.buy-yes:hover { background: var(--green-bg); }
+  .leg-trade-btn.buy-no {
+    background: rgba(61,18,25,0.3); border-color: rgba(248,113,113,0.3); color: var(--red);
+  }
+  .leg-trade-btn.buy-no:hover { background: var(--red-bg); }
+
+  .leg-quick-trade {
+    margin-top: 8px; padding: 10px 12px; background: var(--bg-base);
+    border: 1px solid var(--border); border-radius: 8px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .leg-quick-trade .field { margin: 0; }
+  .leg-quick-trade .field label { margin-bottom: 3px; font-size: 9px; }
+  .leg-quick-trade input {
+    width: 70px; padding: 6px 8px; font-size: 12px;
+  }
+  .leg-quick-trade .lqt-btn {
+    padding: 6px 14px; border-radius: 5px; border: none;
+    font: 700 11px var(--font); cursor: pointer; transition: all 0.15s;
+  }
+  .lqt-btn.lqt-confirm {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim)); color: var(--bg-base);
+  }
+  .lqt-btn.lqt-confirm:hover { opacity: 0.9; }
+  .lqt-btn.lqt-cancel {
+    background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+  }
+  .leg-trade-result {
+    margin-top: 6px; padding: 6px 10px; border-radius: 5px; font-size: 11px;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ─── LIVE SCORE ─── */
+  .leg-score-box {
+    background: var(--bg-base); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;
+    max-width: 400px;
+  }
+  .score-competitor {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 4px 0;
+  }
+  .score-competitor.serving .score-name::before {
+    content: "●"; color: var(--green); margin-right: 6px; font-size: 8px;
+  }
+  .score-name {
+    font-size: 13px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .score-numbers {
+    display: flex; align-items: center; gap: 4px; font-family: var(--mono);
+  }
+  .score-set {
+    background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 6px; font-size: 13px; font-weight: 700;
+    min-width: 24px; text-align: center;
+  }
+  .score-games {
+    color: var(--text); font-size: 14px; font-weight: 700; min-width: 20px; text-align: center;
+  }
+  .score-points {
+    background: var(--bg-elevated); border: 1px solid var(--gold);
+    border-radius: 4px; padding: 2px 8px; font-size: 13px; font-weight: 700;
+    color: var(--gold); min-width: 28px; text-align: center;
+  }
+  .score-total {
+    font-size: 16px; font-weight: 700; min-width: 28px; text-align: center;
+  }
+  .score-status {
+    font-size: 11px; color: var(--text-dim); padding-top: 2px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .score-item {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
+    padding: 2px 8px; background: var(--bg-elevated); border-radius: 4px;
+    margin-right: 4px; margin-bottom: 4px;
+  }
+  .score-key { color: var(--text-dim); font-size: 10px; text-transform: uppercase; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo-mark">K</div>
+      <div>
+        <h1>Kalshi Command</h1>
+        <p>Portfolio Dashboard</p>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>API Key ID</label>
+      <input id="inp-key-id" type="text" placeholder="e.g. a952bcbe-ec3b-4b5b-b8f9-11dae589608c">
+    </div>
+
+    <div class="field">
+      <label>RSA Private Key (.pem file)</label>
+      <div id="file-drop" class="file-upload-area" onclick="document.getElementById('file-input').click()">
+        Drop your .pem file here or click to browse
+      </div>
+      <input id="file-input" type="file" accept=".pem,.key,.txt" style="display:none" onchange="handleKeyFile(event)">
+    </div>
+
+    <div class="field">
+      <label>Or paste PEM text directly</label>
+      <textarea id="inp-key-pem" placeholder="-----BEGIN PRIVATE KEY-----&#10;MIIEvgIBADANBg..."></textarea>
+    </div>
+
+    <div class="demo-toggle">
+      <label><input id="inp-demo" type="checkbox"> Use Demo Environment</label>
+      <div class="demo-hint">Safe for testing — no real money</div>
+    </div>
+
+    <div class="demo-toggle" style="margin-top:8px">
+      <label><input id="inp-remember" type="checkbox" checked> Remember me on this device</label>
+      <div class="demo-hint">Saves credentials in your browser's local storage</div>
+    </div>
+
+    <button id="btn-connect" class="connect-btn" onclick="doConnect()">Connect to Kalshi</button>
+
+    <div id="login-error"></div>
+
+    <p class="security-note">
+      Your private key is sent to the local server for API signing only.<br>
+      It is held in memory and never written to disk.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app-screen" style="display:none">
+
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-logo">K</div>
+      <div>
+        <div class="header-title">Kalshi Command</div>
+        <div class="header-env" id="env-label">LIVE</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="refresh-time" id="refresh-time"></span>
+      <span style="display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;font-family:var(--mono)">
+        <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block"></span>
+        <span id="live-label" style="color:var(--red)">OFFLINE</span>
+      </span>
+      <span id="write-status" style="display:none;font-size:11px;font-weight:600;font-family:var(--mono);display:flex;align-items:center;gap:4px"></span>
+      <button class="btn-sm" onclick="fetchAll()" id="btn-refresh">↻ Refresh</button>
+      <button class="btn-sm" id="btn-unlock" style="display:none;color:var(--gold);border-color:var(--gold)" onclick="showPasswordPrompt()">🔒 Unlock Trading</button>
+      <button class="btn-sm danger" id="btn-disconnect" onclick="doDisconnect(false)">Disconnect</button>
+      <button class="btn-sm danger" id="btn-forget" onclick="doDisconnect(true)" title="Disconnect and remove saved credentials">Forget &amp; Disconnect</button>
+    </div>
+  </header>
+
+  <!-- Password prompt modal -->
+  <div id="password-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center">
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:360px;width:100%">
+      <h3 style="font-size:16px;margin-bottom:14px">Unlock Trading</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Enter the dashboard password to enable trade placement.</p>
+      <div class="field">
+        <label>Password</label>
+        <input id="inp-password" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doUnlockWrite()">
+      </div>
+      <div id="password-error" style="margin-top:8px"></div>
+      <div style="display:flex;gap:8px;margin-top:16px">
+        <button class="connect-btn" style="flex:1;padding:10px 0;font-size:13px" onclick="doUnlockWrite()">Unlock</button>
+        <button class="btn-sm" style="padding:10px 16px" onclick="hidePasswordPrompt()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="app-error"></div>
+
+  <div class="balance-row">
+    <div class="balance-card">
+      <div class="balance-label">Available Balance</div>
+      <div class="balance-value" id="bal-avail">—</div>
+    </div>
+    <div class="balance-card">
+      <div class="balance-label">Portfolio Value</div>
+      <div class="balance-value" id="bal-portfolio">—</div>
+    </div>
+    <div class="balance-card">
+      <div class="balance-label">Open Positions</div>
+      <div class="balance-value" id="bal-positions">—</div>
+    </div>
+    <div class="balance-card">
+      <div class="balance-label">Resting Orders</div>
+      <div class="balance-value" id="bal-orders">—</div>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab active" data-tab="combos">Positions</button>
+  </div>
+
+  <div class="content">
+    <div id="tab-combos"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let sessionId = null;
+let writeToken = null; // Password-authenticated write access token
+let serverConfig = null; // { envMode, envSessionId, readOnly, passwordRequired }
+let balance = null;
+let positions = null;
+let orders = null;
+let fills = null;
+let marketCache = {};
+let eventCache = {};
+let milestoneCache = {}; // event_ticker -> milestone object
+let liveDataCache = {};  // event_ticker -> live_data object (scores etc)
+let activeTab = "combos";
+let expandedCombos = new Set(); // Track which combo cards are expanded
+let openLegTrades = {}; // Track which leg trade forms are open: { legId: {ticker, side, action, price} }
+
+// ─── HELPERS ───
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => document.querySelectorAll(s);
+const fmtCents = (c) => "$" + (c / 100).toFixed(2);
+const fmtDollars = (d) => "$" + parseFloat(d || 0).toFixed(2);
+const pctFrom = (d) => (parseFloat(d || 0) * 100).toFixed(0) + "%";
+const esc = (s) => {
+  const d = document.createElement("div");
+  d.textContent = s || "";
+  return d.innerHTML;
+};
+
+// Find the initial entry (first buy fill) for a given market ticker
+function getEntryFill(ticker) {
+  if (!fills?.fills) return null;
+  // Find the earliest buy fill for this ticker
+  const buyFills = fills.fills
+    .filter(f => f.ticker === ticker && f.action === "buy")
+    .sort((a, b) => new Date(a.created_time) - new Date(b.created_time));
+  return buyFills.length > 0 ? buyFills[0] : null;
+}
+
+// Format combo titles: "yes Player1,yes Player2,no Player3" → multi-line with colored YES/NO and prices
+// Check if a market is effectively settled/resolved
+function isMarketDone(mkt) {
+  if (!mkt) return false;
+  const status = mkt.status;
+  if (status === "settled" || status === "finalized" || status === "closed") return true;
+  // Also treat 99-100% yes or 0-1% yes as effectively resolved
+  const ask = parseFloat(mkt.yes_ask_dollars || 0);
+  const bid = parseFloat(mkt.yes_bid_dollars || 0);
+  if (ask >= 0.99 && bid >= 0.99) return true;
+  if (ask <= 0.01 && bid <= 0.01) return true;
+  return false;
+}
+
+function getMarketResult(mkt, side) {
+  if (!mkt) return null;
+  // Explicit result
+  if (mkt.result) return mkt.result;
+  // Infer from price if at extremes
+  const ask = parseFloat(mkt.yes_ask_dollars || 0);
+  const bid = parseFloat(mkt.yes_bid_dollars || 0);
+  if (ask >= 0.99 && bid >= 0.99) return "yes";
+  if (ask <= 0.01 && bid <= 0.01) return "no";
+  return null;
+}
+
+function formatComboTitle(title, legs) {
+  if (!title) return "";
+  if (!title.match(/^(yes |no )/i)) return esc(title);
+  const parts = title.split(",").map(p => p.trim());
+  return parts.map((p, i) => {
+    const m = p.match(/^(yes|no)\s+(.+)$/i);
+    if (m) {
+      const side = m[1].toUpperCase();
+      const name = m[2];
+      const color = side === "YES" ? "var(--green)" : "var(--red)";
+
+      if (legs && legs[i]) {
+        const legMkt = legs[i].marketInfo;
+        const legSide = (legs[i].side || "yes").toLowerCase();
+        const legTicker = legs[i].market_ticker || "";
+
+        // Settled leg — show ✓ or ✗, no live data needed
+        if (isMarketDone(legMkt)) {
+          const result = getMarketResult(legMkt, legSide);
+          if (result) {
+            const won = (legSide === "yes" && result === "yes") || (legSide === "no" && result === "no");
+            if (won) {
+              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> ${esc(name)} <span style="color:var(--green);font-size:13px;font-weight:700">✓</span>`;
+            } else {
+              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> <span style="text-decoration:line-through;opacity:0.5">${esc(name)}</span> <span style="color:var(--red);font-size:13px;font-weight:700">✗</span>`;
+            }
+          }
+        }
+
+        // Active leg — compute initial values
+        if (legMkt) {
+          let price, prevPrice;
+          if (legSide === "yes") {
+            price = parseFloat(legMkt.yes_ask_dollars || legMkt.last_price_dollars || 0);
+            prevPrice = parseFloat(legMkt.previous_yes_ask_dollars || legMkt.previous_price_dollars || 0);
+          } else {
+            price = parseFloat(legMkt.no_ask_dollars || 0);
+            if (!price && legMkt.yes_bid_dollars) price = 1 - parseFloat(legMkt.yes_bid_dollars);
+            prevPrice = parseFloat(legMkt.previous_price_dollars || 0);
+            if (prevPrice > 0) prevPrice = 1 - prevPrice;
+          }
+
+          const curCents = (price > 0 && price < 1) ? (price * 100).toFixed(0) + "¢" : "";
+          const prevCents = (prevPrice > 0 && prevPrice < 1) ? (prevPrice * 100).toFixed(0) + "¢" : "";
+          let arrowChar = "", arrowColor = "";
+          if (price > 0 && prevPrice > 0) {
+            const diff = price - prevPrice;
+            if (diff > 0.001) { arrowChar = "▲"; arrowColor = "var(--green)"; }
+            else if (diff < -0.001) { arrowChar = "▼"; arrowColor = "var(--red)"; }
+            else { arrowChar = "─"; arrowColor = "var(--gold)"; }
+          }
+
+          return `<span style="color:${color};font-weight:700;font-size:12px">${side} <span data-ticker="${esc(legTicker)}" data-field="title-price" data-side="${legSide}" style="font-family:var(--mono);font-size:11px;opacity:0.8">${curCents}</span></span> ${esc(name)} <span data-ticker="${esc(legTicker)}" data-field="title-arrow" data-side="${legSide}" style="font-size:12px;color:${arrowColor}">${arrowChar}</span> <span data-ticker="${esc(legTicker)}" data-field="title-prev" data-side="${legSide}" style="font-family:var(--mono);font-size:11px">${prevCents}</span>`;
+        }
+      }
+
+      return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> ${esc(name)}`;
+    }
+    return esc(p);
+  }).join("<br>");
+}
+
+// ─── FILE UPLOAD ───
+function handleKeyFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    $("#inp-key-pem").value = ev.target.result;
+    $("#file-drop").textContent = "✓ " + file.name;
+    $("#file-drop").classList.add("has-key");
+  };
+  reader.readAsText(file);
+}
+
+// Drag & drop
+const fileDrop = document.getElementById("file-drop");
+fileDrop.addEventListener("dragover", (e) => { e.preventDefault(); fileDrop.style.borderColor = "var(--gold)"; });
+fileDrop.addEventListener("dragleave", () => { fileDrop.style.borderColor = ""; });
+fileDrop.addEventListener("drop", (e) => {
+  e.preventDefault();
+  fileDrop.style.borderColor = "";
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      $("#inp-key-pem").value = ev.target.result;
+      fileDrop.textContent = "✓ " + file.name;
+      fileDrop.classList.add("has-key");
+    };
+    reader.readAsText(file);
+  }
+});
+
+// ─── API HELPER ───
+async function api(method, path, body) {
+  const headers = { "Content-Type": "application/json", "X-Session-Id": sessionId };
+  if (writeToken && method !== "GET") headers["X-Write-Token"] = writeToken;
+  const opts = { method, headers };
+  if (body && method !== "GET") opts.body = JSON.stringify(body);
+  const res = await fetch("/api/kalshi" + path, opts);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || data.details?.error || `API ${res.status}`);
+  return data;
+}
+
+// ═══════════════════════════════════════════════
+//  CONNECT / DISCONNECT
+// ═══════════════════════════════════════════════
+async function doConnect() {
+  const btn = $("#btn-connect");
+  btn.disabled = true;
+  btn.textContent = "Connecting...";
+  $("#login-error").innerHTML = "";
+
+  const apiKeyId = $("#inp-key-id").value.trim();
+  const privateKeyPem = $("#inp-key-pem").value.trim();
+  const useDemoEnv = $("#inp-demo").checked;
+
+  if (!apiKeyId || !privateKeyPem) {
+    showLoginError("Please provide both API Key ID and private key.");
+    btn.disabled = false;
+    btn.textContent = "Connect to Kalshi";
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/connect", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKeyId, privateKeyPem, useDemoEnv }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      let msg = data.error || "Connection failed";
+      if (data.details) {
+        const d = data.details;
+        if (typeof d === "object") {
+          msg += " — " + (d.error || d.message || d.code || JSON.stringify(d));
+        } else {
+          msg += " — " + d;
+        }
+      }
+      throw new Error(msg);
+    }
+
+    sessionId = data.sessionId;
+    balance = data.balance;
+
+    // Save credentials if "Remember me" is checked
+    if ($("#inp-remember").checked) {
+      try {
+        localStorage.setItem("kalshi_key_id", apiKeyId);
+        localStorage.setItem("kalshi_pem", privateKeyPem);
+        localStorage.setItem("kalshi_demo", useDemoEnv ? "1" : "0");
+      } catch(e) {}
+    }
+
+    $("#login-screen").style.display = "none";
+    $("#app-screen").style.display = "block";
+    $("#env-label").textContent = useDemoEnv ? "DEMO" : "LIVE";
+
+    updateWriteUI();
+    updateBalanceCards();
+    fetchAll();
+    startStream(); // Start real-time WebSocket stream
+  } catch (e) {
+    showLoginError(e.message);
+  }
+
+  btn.disabled = false;
+  btn.textContent = "Connect to Kalshi";
+}
+
+function showLoginError(msg) {
+  $("#login-error").innerHTML = `<div class="error-banner">⚠ ${esc(msg)}</div>`;
+}
+
+function clearSavedCredentials() {
+  try {
+    localStorage.removeItem("kalshi_key_id");
+    localStorage.removeItem("kalshi_pem");
+    localStorage.removeItem("kalshi_demo");
+  } catch(e) {}
+}
+
+function doDisconnect(forgetCreds) {
+  stopStream(); // Stop SSE stream
+  fetch("/api/disconnect", { method: "POST", headers: { "X-Session-Id": sessionId } });
+  sessionId = null;
+  balance = null; positions = null; orders = null; fills = null;
+  marketCache = {}; eventCache = {}; milestoneCache = {}; liveDataCache = {};
+  if (forgetCreds) {
+    clearSavedCredentials();
+    // Clear the form fields too
+    $("#inp-key-id").value = "";
+    $("#inp-key-pem").value = "";
+    $("#inp-demo").checked = false;
+    const fd = $("#file-drop");
+    fd.textContent = "Drop your .pem file here or click to browse";
+    fd.classList.remove("has-key");
+  }
+  $("#app-screen").style.display = "none";
+  $("#login-screen").style.display = "flex";
+}
+
+// ═══════════════════════════════════════════════
+//  FETCH ALL DATA
+// ═══════════════════════════════════════════════
+async function fetchAll() {
+  const btn = $("#btn-refresh");
+  btn.innerHTML = '<span class="spinner"></span> Syncing...';
+  btn.disabled = true;
+  $("#app-error").innerHTML = "";
+
+  try {
+    const [balRes, posRes, ordRes, fillRes] = await Promise.all([
+      api("GET", "/portfolio/balance"),
+      api("GET", "/portfolio/positions?count_filter=position,total_traded&limit=200"),
+      api("GET", "/portfolio/orders?status=resting&limit=200"),
+      api("GET", "/portfolio/fills?limit=100"),
+    ]);
+    balance = balRes;
+    positions = posRes;
+    orders = ordRes;
+    fills = fillRes;
+
+    // ── Step 1: Fetch market details for each position ──
+    const mTickers = (posRes.market_positions || []).map(p => p.ticker);
+    const missingM = mTickers.filter(t => !marketCache[t]);
+    await Promise.allSettled(missingM.map(async t => {
+      try {
+        const r = await api("GET", `/markets/${t}`);
+        marketCache[t] = r.market || r;
+      } catch(e) {}
+    }));
+
+    // ── Step 2: Detect combos — markets with mve_selected_legs ──
+    // For each combo market, fetch the individual leg markets too
+    const legTickersToFetch = new Set();
+    mTickers.forEach(t => {
+      const mkt = marketCache[t];
+      if (mkt?.mve_selected_legs && mkt.mve_selected_legs.length > 0) {
+        mkt.mve_selected_legs.forEach(leg => {
+          if (leg.market_ticker && !marketCache[leg.market_ticker]) {
+            legTickersToFetch.add(leg.market_ticker);
+          }
+        });
+      }
+    });
+    // Fetch leg market details
+    await Promise.allSettled([...legTickersToFetch].map(async t => {
+      try {
+        const r = await api("GET", `/markets/${t}`);
+        marketCache[t] = r.market || r;
+      } catch(e) {}
+    }));
+
+    // ── Step 3: Fetch event details ──
+    const eTickers = new Set();
+    (posRes.event_positions || []).forEach(ep => eTickers.add(ep.event_ticker));
+    mTickers.forEach(t => {
+      const m = marketCache[t];
+      if (m?.event_ticker) eTickers.add(m.event_ticker);
+      // Also add leg event tickers
+      if (m?.mve_selected_legs) {
+        m.mve_selected_legs.forEach(leg => {
+          if (leg.event_ticker) eTickers.add(leg.event_ticker);
+        });
+      }
+    });
+    const missingE = [...eTickers].filter(t => !eventCache[t]);
+    await Promise.allSettled(missingE.map(async t => {
+      try {
+        const r = await api("GET", `/events/${t}`);
+        eventCache[t] = r.event || r;
+      } catch(e) {}
+    }));
+
+    updateBalanceCards();
+    renderAllTabs();
+    $("#refresh-time").textContent = new Date().toLocaleTimeString();
+  } catch (e) {
+    $("#app-error").innerHTML = `<div class="error-bar">⚠ ${esc(e.message)}</div>`;
+  }
+
+  btn.innerHTML = "↻ Refresh";
+  btn.disabled = false;
+}
+
+// ═══════════════════════════════════════════════
+//  REAL-TIME STREAMING (SSE ← Server ← Kalshi WS)
+// ═══════════════════════════════════════════════
+let eventSource = null;
+let liveIndicator = false;
+
+function startStream() {
+  if (eventSource) { eventSource.close(); }
+  if (!sessionId) return;
+
+  eventSource = new EventSource(`/api/stream?session=${sessionId}`);
+  let tickCount = 0;
+
+  eventSource.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+
+      if (data.type === "connected") {
+        console.log("[stream] SSE connected to server");
+        setLiveStatus(true);
+        return;
+      }
+
+      if (data.type === "ws_disconnected") {
+        console.log("[stream] WebSocket disconnected");
+        setLiveStatus(false);
+        return;
+      }
+
+      // Ticker updates — live price changes
+      if (data.type === "ticker") {
+        const msg = data.msg;
+        if (!msg || !msg.market_ticker) return;
+        const ticker = msg.market_ticker;
+
+        // Update market cache with new prices
+        if (marketCache[ticker]) {
+          if (msg.yes_bid_dollars !== undefined) marketCache[ticker].yes_bid_dollars = msg.yes_bid_dollars;
+          if (msg.yes_ask_dollars !== undefined) marketCache[ticker].yes_ask_dollars = msg.yes_ask_dollars;
+          if (msg.no_bid_dollars !== undefined) marketCache[ticker].no_bid_dollars = msg.no_bid_dollars;
+          if (msg.no_ask_dollars !== undefined) marketCache[ticker].no_ask_dollars = msg.no_ask_dollars;
+          if (msg.last_price_dollars !== undefined) marketCache[ticker].last_price_dollars = msg.last_price_dollars;
+          if (msg.volume !== undefined) marketCache[ticker].volume = msg.volume;
+          if (msg.yes_bid !== undefined) marketCache[ticker].yes_bid = msg.yes_bid;
+          if (msg.yes_ask !== undefined) marketCache[ticker].yes_ask = msg.yes_ask;
+        }
+
+        // Targeted DOM update — only update price elements, don't rebuild HTML
+        updatePricesInDOM(ticker);
+        tickCount++;
+        if (tickCount % 20 === 0) {
+          $("#refresh-time").textContent = "LIVE \u2022 " + new Date().toLocaleTimeString();
+        }
+        return;
+      }
+
+      // Fill updates — a trade was matched
+      if (data.type === "fill") {
+        console.log("[stream] Fill received:", data.msg);
+        fetchAll();
+        return;
+      }
+
+      // Subscribed confirmation
+      if (data.type === "subscribed") {
+        console.log("[stream] Subscribed to channel:", JSON.stringify(data));
+        setLiveStatus(true);
+        return;
+      }
+
+      // Log any other message types for debugging
+      if (data.type && data.type !== "connected") {
+        console.log("[stream] Message:", data.type, data);
+      }
+
+    } catch(err) {
+      // Ignore parse errors from heartbeats etc
+    }
+  };
+
+  eventSource.onerror = () => {
+    setLiveStatus(false);
+    // EventSource auto-reconnects
+  };
+}
+
+function stopStream() {
+  if (eventSource) {
+    eventSource.close();
+    eventSource = null;
+  }
+  setLiveStatus(false);
+}
+
+function setLiveStatus(isLive) {
+  liveIndicator = isLive;
+  const el = $("#live-dot");
+  if (el) {
+    el.style.background = isLive ? "var(--green)" : "var(--red)";
+    el.title = isLive ? "WebSocket connected — live updates" : "WebSocket disconnected";
+  }
+  const label = $("#live-label");
+  if (label) {
+    label.textContent = isLive ? "LIVE" : "OFFLINE";
+    label.style.color = isLive ? "var(--green)" : "var(--red)";
+  }
+}
+
+// Targeted price updates — find elements by data-ticker and update text only
+function updatePricesInDOM(ticker) {
+  const mkt = marketCache[ticker];
+  if (!mkt) return;
+
+  const yesBidRaw = parseFloat(mkt.yes_bid_dollars || 0);
+  const yesAskRaw = parseFloat(mkt.yes_ask_dollars || mkt.last_price_dollars || 0);
+  let noBidRaw = parseFloat(mkt.no_bid_dollars || 0);
+  let noAskRaw = parseFloat(mkt.no_ask_dollars || 0);
+  if (!mkt.no_ask_dollars && yesAskRaw > 0) noAskRaw = 1 - yesBidRaw;
+  if (!mkt.no_bid_dollars && yesBidRaw > 0) noBidRaw = 1 - yesAskRaw;
+
+  const yesBid = yesBidRaw > 0 ? (yesBidRaw * 100).toFixed(0) : "—";
+  const yesAsk = yesAskRaw > 0 ? (yesAskRaw * 100).toFixed(0) : "—";
+  const noBid = noBidRaw > 0 ? (noBidRaw * 100).toFixed(0) : "—";
+  const noAsk = noAskRaw > 0 ? (noAskRaw * 100).toFixed(0) : "—";
+  // For combo markets, ask/bid are often $1/$0 (empty book). Use last_price instead.
+  const isEmptyBook = yesAskRaw >= 1.0 && yesBidRaw <= 0.0;
+  const lastPriceRaw = parseFloat(mkt.last_price_dollars || 0);
+  const lastPrice = lastPriceRaw > 0 ? (lastPriceRaw * 100).toFixed(0) : "—";
+  const yesAskPct = yesAskRaw > 0 ? (yesAskRaw * 100).toFixed(0) + "%" : "—";
+
+  // Update all elements tagged with this ticker
+  document.querySelectorAll(`[data-ticker="${ticker}"]`).forEach(el => {
+    const field = el.dataset.field;
+    if (field === "yes-ask") {
+      if (isEmptyBook && lastPriceRaw > 0) el.textContent = (lastPriceRaw * 100).toFixed(0) + "¢";
+      else el.textContent = yesAsk + "¢";
+    }
+    else if (field === "yes-bid") el.textContent = yesBid + "¢";
+    else if (field === "no-ask") {
+      if (isEmptyBook && lastPriceRaw > 0) el.textContent = (100 - lastPriceRaw * 100).toFixed(0) + "¢";
+      else el.textContent = noAsk + "¢";
+    }
+    else if (field === "no-bid") el.textContent = noBid + "¢";
+    else if (field === "last") el.textContent = "Last: " + lastPrice + "¢";
+    else if (field === "yes-pct") el.textContent = "Y: " + yesAskPct;
+    else if (field === "combo-pct") el.textContent = yesAskPct;
+    // Title inline prices and arrows
+    else if (field === "title-price") {
+      const s = el.dataset.side || "yes";
+      let p;
+      if (s === "yes") p = yesAskRaw;
+      else p = noAskRaw;
+      el.textContent = (p > 0 && p < 1) ? (p * 100).toFixed(0) + "¢" : "";
+    }
+    else if (field === "title-arrow" || field === "title-prev") {
+      const s = el.dataset.side || "yes";
+      let curP, prevP;
+      const prevYesAsk = parseFloat(mkt.previous_yes_ask_dollars || mkt.previous_price_dollars || 0);
+      if (s === "yes") {
+        curP = yesAskRaw;
+        prevP = prevYesAsk;
+      } else {
+        curP = noAskRaw;
+        prevP = prevYesAsk > 0 ? 1 - prevYesAsk : 0;
+      }
+      if (field === "title-arrow") {
+        if (curP > 0 && prevP > 0) {
+          const diff = curP - prevP;
+          if (diff > 0.001) { el.textContent = "▲"; el.style.color = "var(--green)"; }
+          else if (diff < -0.001) { el.textContent = "▼"; el.style.color = "var(--red)"; }
+          else { el.textContent = "─"; el.style.color = "var(--gold)"; }
+        }
+      } else {
+        el.textContent = prevP > 0 ? (prevP * 100).toFixed(0) + "¢" : "";
+      }
+    }
+  });
+}
+
+function updateBalanceCards() {
+  if (!balance) return;
+  $("#bal-avail").textContent = fmtCents(balance.balance);
+  $("#bal-portfolio").textContent = fmtCents(balance.portfolio_value);
+  const activePos = (positions?.market_positions || []).filter(p => parseFloat(p.position_fp) !== 0).length;
+  $("#bal-positions").textContent = activePos;
+  $("#bal-orders").textContent = (orders?.orders || []).length;
+
+  // Update tab labels
+  const totalPositions = (positions?.market_positions || []).filter(p => parseFloat(p.position_fp) !== 0).length;
+  const comboTab = document.querySelector('[data-tab="combos"]');
+  if (comboTab) comboTab.textContent = `Positions (${totalPositions})`;
+}
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+document.getElementById("tabs").addEventListener("click", (e) => {
+  if (e.target.classList.contains("tab")) {
+    $$(".tab").forEach(t => t.classList.remove("active"));
+    e.target.classList.add("active");
+    activeTab = e.target.dataset.tab;
+    ["combos"].forEach(t => {
+      $(`#tab-${t}`).style.display = t === activeTab ? "block" : "none";
+    });
+    renderAllTabs();
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════
+function groupPositionsByEvent() {
+  if (!positions) return {};
+  const groups = {};
+  const epMap = {};
+  (positions.event_positions || []).forEach(ep => { epMap[ep.event_ticker] = ep; });
+  (positions.market_positions || []).forEach(mp => {
+    const mkt = marketCache[mp.ticker];
+    const et = mkt?.event_ticker || "unknown";
+    if (!groups[et]) groups[et] = { event: eventCache[et], eventPosition: epMap[et], markets: [] };
+    groups[et].markets.push({ ...mp, marketInfo: mkt });
+  });
+  return groups;
+}
+
+// Separate combo positions (markets with mve_selected_legs) from regular positions
+function getComboAndRegularPositions() {
+  if (!positions) return { combos: [], regulars: [] };
+  const combos = [];
+  const regulars = [];
+
+  (positions.market_positions || []).forEach(mp => {
+    const mkt = marketCache[mp.ticker];
+    if (mkt?.mve_selected_legs && mkt.mve_selected_legs.length > 0) {
+      // This is a combo position — build leg details
+      const legs = mkt.mve_selected_legs.map(leg => {
+        const legMarket = marketCache[leg.market_ticker];
+        return {
+          event_ticker: leg.event_ticker,
+          market_ticker: leg.market_ticker,
+          side: leg.side,
+          yes_settlement_value_dollars: leg.yes_settlement_value_dollars,
+          marketInfo: legMarket,
+          eventInfo: eventCache[leg.event_ticker],
+        };
+      });
+      combos.push({
+        position: mp,
+        comboMarket: mkt,
+        legs,
+      });
+    } else {
+      regulars.push({ position: mp, marketInfo: mkt });
+    }
+  });
+
+  return { combos, regulars };
+}
+
+function renderAllTabs() {
+  renderCombos();
+}
+
+// ─── COMBOS (Positions tab) ───
+function renderCombos() {
+  const { combos, regulars } = getComboAndRegularPositions();
+
+  let html = `<h2 class="section-title">Positions</h2>
+    <p class="combo-explainer">Your combo (parlay) positions with each individual leg shown underneath. Single-leg positions are listed below. Click to expand and see live odds and trade buttons.</p>`;
+
+  if (combos.length === 0) {
+    html += `<div class="empty-state">No combo/parlay bets found.<br>When you place combo bets on Kalshi, each one will appear here with all its legs visible in one view.</div>`;
+  } else {
+    combos.forEach((combo, ci) => {
+      const mp = combo.position;
+      const mkt = combo.comboMarket;
+      const pos = parseFloat(mp.position_fp);
+      const pnl = parseFloat(mp.realized_pnl_dollars || 0);
+      const isSettled = isMarketDone(mkt);
+      const comboResult = getMarketResult(mkt);
+      const legCount = combo.legs.length;
+      const comboId = "combo-" + ci;
+
+      // Determine combo status from legs
+      const legsSettled = combo.legs.filter(l => isMarketDone(l.marketInfo)).length;
+      const allLegsSettled = legsSettled === legCount;
+      const anyLegFailed = combo.legs.some(l => {
+        if (!isMarketDone(l.marketInfo)) return false;
+        const result = getMarketResult(l.marketInfo, l.side);
+        return (l.side === "yes" && result === "no") || (l.side === "no" && result === "yes");
+      });
+
+      // Status display
+      let statusLabel, statusClass;
+      if (isSettled) {
+        if (comboResult === "yes") { statusLabel = "✓ WON"; statusClass = "badge-yes"; }
+        else { statusLabel = "✗ LOST"; statusClass = "badge-no"; }
+      } else if (anyLegFailed) {
+        statusLabel = "✗ LEG LOST"; statusClass = "badge-no";
+      } else {
+        statusLabel = `${legsSettled}/${legCount} settled`;
+        statusClass = "badge-neutral";
+      }
+
+      // Find entry price for the combo itself
+      const comboEntry = getEntryFill(mp.ticker);
+      let comboEntryHtml = "";
+      if (comboEntry) {
+        const ceSide = comboEntry.side || "yes";
+        const cePrice = ceSide === "yes"
+          ? (comboEntry.yes_price_dollars ? (parseFloat(comboEntry.yes_price_dollars) * 100).toFixed(0) : "—")
+          : (comboEntry.no_price_dollars ? (parseFloat(comboEntry.no_price_dollars) * 100).toFixed(0) : "—");
+        comboEntryHtml = `<div class="combo-stat">
+              <span class="combo-stat-label">Opened ${ceSide.toUpperCase()}</span>
+              <span class="combo-stat-val" style="color:${ceSide === "yes" ? "var(--green)" : "var(--red)"}">${cePrice}¢</span>
+            </div>`;
+      }
+
+      html += `<div class="combo-card" id="${comboId}">
+        <div class="combo-header" onclick="toggleCombo('${comboId}')">
+          <div class="combo-left">
+            <span class="combo-chevron${expandedCombos.has(comboId) ? " open" : ""}" id="chev-${comboId}">▶</span>
+            <div>
+              <div class="combo-title">${formatComboTitle(mkt?.title || mp.ticker, combo.legs)}</div>
+              <div class="combo-meta">
+                <span class="leg-count">${legCount} legs</span>
+                <span class="badge ${statusClass}" style="font-size:10px">${statusLabel}</span>
+                <span class="ticker" style="font-size:10px">${esc(mp.ticker)}</span>
+              </div>
+            </div>
+          </div>
+          <div class="combo-right">
+            ${comboEntryHtml}
+            <div class="combo-stat">
+              <span class="combo-stat-label">Exposure</span>
+              <span class="combo-stat-val">${fmtDollars(mp.market_exposure_dollars)}</span>
+            </div>
+            <div class="combo-stat">
+              <span class="combo-stat-label">Payout</span>
+              <span class="combo-stat-val">${pos > 0 ? "+" : ""}${mp.position_fp}</span>
+            </div>
+            <div class="combo-stat">
+              <span class="combo-stat-label">P&L</span>
+              <span class="combo-stat-val" style="color:${pnl >= 0 ? "var(--green)" : "var(--red)"}">${pnl >= 0 ? "+" : ""}${pnl.toFixed(4)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="combo-legs" id="legs-${comboId}" style="display:${expandedCombos.has(comboId) ? "block" : "none"}">
+          <div style="padding:10px 20px 6px;font-size:11px;color:var(--text-dim);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border-subtle)">
+            Individual Legs
+          </div>`;
+
+      combo.legs.forEach((leg, li) => {
+        const legMkt = leg.marketInfo;
+        const legSettled = isMarketDone(legMkt);
+        const legResult = getMarketResult(legMkt, leg.side);
+        const legSide = leg.side || "yes";
+        const legId = `${comboId}-leg-${li}`;
+
+        // Did this specific leg hit?
+        let legHit = null;
+        if (legSettled && legResult) {
+          legHit = (legSide === "yes" && legResult === "yes") || (legSide === "no" && legResult === "no");
+        }
+
+        // Real-time odds — compute both sides
+        let yesBidRaw = parseFloat(legMkt?.yes_bid_dollars || 0);
+        let yesAskRaw = parseFloat(legMkt?.yes_ask_dollars || legMkt?.last_price_dollars || 0);
+        let noBidRaw = parseFloat(legMkt?.no_bid_dollars || 0);
+        let noAskRaw = parseFloat(legMkt?.no_ask_dollars || 0);
+        // If no-side is missing, derive from yes-side (yes + no = 1.00)
+        if (!legMkt?.no_ask_dollars && yesAskRaw > 0) noAskRaw = 1 - yesBidRaw;
+        if (!legMkt?.no_bid_dollars && yesBidRaw > 0) noBidRaw = 1 - yesAskRaw;
+        const yesBid = yesBidRaw > 0 ? (yesBidRaw * 100).toFixed(0) : "—";
+        const yesAsk = yesAskRaw > 0 ? (yesAskRaw * 100).toFixed(0) : "—";
+        const noBid = noBidRaw > 0 ? (noBidRaw * 100).toFixed(0) : "—";
+        const noAsk = noAskRaw > 0 ? (noAskRaw * 100).toFixed(0) : "—";
+        const lastPrice = legMkt?.last_price_dollars ? (parseFloat(legMkt.last_price_dollars) * 100).toFixed(0) : "—";
+        const vol = legMkt?.volume_24h || legMkt?.volume || "—";
+        const legEventName = leg.eventInfo?.title || leg.event_ticker || "";
+
+        html += `<div class="leg-row" style="flex-direction:column;align-items:stretch">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div class="leg-num">Leg ${li + 1}</div>
+            <div class="leg-main">
+              <div class="leg-title">${esc(legMkt?.title || leg.market_ticker)}</div>
+              <div class="leg-details">
+                <span class="ticker" style="font-size:10px">${esc(leg.market_ticker)}</span>
+                <span class="badge ${legSide === "yes" ? "badge-yes" : "badge-no"}" style="font-size:10px">${legSide.toUpperCase()}</span>
+                ${legSettled && legHit !== null ? `
+                  <span class="badge ${legHit ? "badge-yes" : "badge-no"}" style="font-size:10px;font-weight:700">
+                    ${legHit ? "✓ HIT" : "✗ MISS"}
+                  </span>
+                  <span style="font-size:11px;color:var(--text-muted)">Settled: ${(legResult || "").toUpperCase()}</span>
+                ` : ""}
+                ${legMkt?.status ? `<span style="font-size:10px;color:var(--text-dim);background:var(--bg-elevated);padding:1px 6px;border-radius:3px">${legMkt.status}</span>` : ""}
+              </div>
+              ${legEventName ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">${esc(legEventName)}</div>` : ""}
+            </div>
+          </div>
+
+          ${!legSettled && legMkt ? `
+          <div class="leg-odds-row" style="margin-left:62px">
+            <div class="odds-box">
+              <div class="odds-side odds-yes">
+                <span class="odds-label">YES</span>
+                <span class="odds-val" data-ticker="${esc(leg.market_ticker)}" data-field="yes-ask">${yesAsk}¢</span>
+              </div>
+              <div class="odds-mid"><span data-ticker="${esc(leg.market_ticker)}" data-field="yes-bid" title="Bid">${yesBid}¢</span></div>
+            </div>
+            <div class="odds-box">
+              <div class="odds-side odds-no">
+                <span class="odds-label">NO</span>
+                <span class="odds-val" data-ticker="${esc(leg.market_ticker)}" data-field="no-ask">${noAsk}¢</span>
+              </div>
+              <div class="odds-mid"><span data-ticker="${esc(leg.market_ticker)}" data-field="no-bid" title="Bid">${noBid}¢</span></div>
+            </div>
+            <span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)" data-ticker="${esc(leg.market_ticker)}" data-field="last">Last: ${lastPrice}¢</span>
+            <div style="flex:1"></div>
+            ${canWriteLocally() ? `
+            <button class="leg-trade-btn buy-yes" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','yes','buy',${yesAsk === "—" ? 50 : yesAsk})">Buy Yes</button>
+            <button class="leg-trade-btn buy-no" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','no','buy',${noAsk === "—" ? 50 : noAsk})">Buy No</button>
+            <button class="leg-trade-btn buy-yes" style="opacity:0.6" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','yes','sell',${yesBid === "—" ? 50 : yesBid})">Sell Yes</button>
+            <button class="leg-trade-btn buy-no" style="opacity:0.6" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','no','sell',${noBid === "—" ? 50 : noBid})">Sell No</button>
+            ` : ""}
+          </div>
+          <div id="qt-${legId}" style="margin-left:62px"></div>
+          ` : ""}
+        </div>`;
+      });
+
+      html += `</div></div>`;
+    });
+  }
+
+  // Also show regular (non-combo) positions grouped by event for context
+  if (regulars.length > 0) {
+    html += `<h3 class="singles-title">Single Positions</h3>`;
+    regulars.forEach(({ position: mp, marketInfo: mkt }) => {
+      const pos = parseFloat(mp.position_fp);
+      const pnl = parseFloat(mp.realized_pnl_dollars || 0);
+      const done = isMarketDone(mkt);
+      const result = getMarketResult(mkt);
+      const singleEntry = getEntryFill(mp.ticker);
+
+      // Determine side from entry fill or position direction
+      const side = singleEntry?.side || (pos > 0 ? "yes" : "no");
+
+      // Entry price
+      let openedHtml = "";
+      if (singleEntry) {
+        const ePrice = side === "yes"
+          ? (singleEntry.yes_price_dollars ? (parseFloat(singleEntry.yes_price_dollars) * 100).toFixed(0) : "—")
+          : (singleEntry.no_price_dollars ? (parseFloat(singleEntry.no_price_dollars) * 100).toFixed(0) : "—");
+        openedHtml = `<div class="odds-box" style="display:inline-flex">
+            <div class="odds-side ${side === "yes" ? "odds-yes" : "odds-no"}" style="opacity:0.7;padding:3px 8px">
+              <span class="odds-label" style="font-size:8px">OPENED ${side.toUpperCase()}</span>
+              <span class="odds-val" style="font-size:12px">${ePrice}¢</span>
+            </div>
+          </div>`;
+      }
+
+      // Current prices and arrow
+      let currentHtml = "";
+      let arrowHtml = "";
+      if (done && result) {
+        // Settled — show ✓ or ✗
+        const won = (side === "yes" && result === "yes") || (side === "no" && result === "no");
+        currentHtml = `<span class="badge ${won ? "badge-yes" : "badge-no"}" style="font-weight:700">${won ? "✓ WON" : "✗ LOST"}</span>`;
+      } else if (mkt) {
+        // Active — show YES/NO boxes with live data
+        const yesAsk = parseFloat(mkt.yes_ask_dollars || mkt.last_price_dollars || 0);
+        const noAsk = parseFloat(mkt.no_ask_dollars || 0) || (yesAsk > 0 ? 1 - parseFloat(mkt.yes_bid_dollars || 0) : 0);
+        const yesBid = parseFloat(mkt.yes_bid_dollars || 0);
+        const noBid = parseFloat(mkt.no_bid_dollars || 0) || (yesBid > 0 ? 1 - yesAsk : 0);
+        currentHtml = `
+          <div class="odds-box" style="display:inline-flex">
+            <div class="odds-side odds-yes" style="padding:3px 8px">
+              <span class="odds-label" style="font-size:8px">YES</span>
+              <span class="odds-val" style="font-size:12px" data-ticker="${esc(mp.ticker)}" data-field="yes-ask">${yesAsk > 0 ? (yesAsk * 100).toFixed(0) + "¢" : "—"}</span>
+            </div>
+          </div>
+          <div class="odds-box" style="display:inline-flex">
+            <div class="odds-side odds-no" style="padding:3px 8px">
+              <span class="odds-label" style="font-size:8px">NO</span>
+              <span class="odds-val" style="font-size:12px" data-ticker="${esc(mp.ticker)}" data-field="no-ask">${noAsk > 0 ? (noAsk * 100).toFixed(0) + "¢" : "—"}</span>
+            </div>
+          </div>`;
+
+        // Momentum arrow
+        const prevPrice = parseFloat(mkt.previous_yes_ask_dollars || mkt.previous_price_dollars || 0);
+        let curP = side === "yes" ? yesAsk : noAsk;
+        let prevP = side === "yes" ? prevPrice : (prevPrice > 0 ? 1 - prevPrice : 0);
+        if (curP > 0 && prevP > 0) {
+          const diff = curP - prevP;
+          let arrow, aColor;
+          if (diff > 0.001) { arrow = "▲"; aColor = "var(--green)"; }
+          else if (diff < -0.001) { arrow = "▼"; aColor = "var(--red)"; }
+          else { arrow = "─"; aColor = "var(--gold)"; }
+          arrowHtml = `<span data-ticker="${esc(mp.ticker)}" data-field="title-arrow" data-side="${side}" style="font-size:12px;color:${aColor}">${arrow}</span>
+            <span data-ticker="${esc(mp.ticker)}" data-field="title-prev" data-side="${side}" style="font-family:var(--mono);font-size:10px;opacity:0.6">$${prevP.toFixed(2)}</span>`;
+        }
+      }
+
+      html += `<div class="combo-card"><div style="padding:14px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+          <div>
+            <div class="single-title">${esc(mkt?.title || mp.ticker)}</div>
+            <div class="single-meta">
+              <span class="ticker">${esc(mp.ticker)}</span>
+              ${mkt?.event_ticker ? `<span style="margin-left:8px;color:var(--text-dim)">${esc(mkt.event_ticker)}</span>` : ""}
+            </div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span class="badge ${pos > 0 ? "badge-yes" : pos < 0 ? "badge-no" : "badge-neutral"}">${pos > 0 ? "+" : ""}${mp.position_fp}</span>
+            <span style="font:600 13px/1 var(--mono);color:${pnl >= 0 ? "var(--green)" : "var(--red)"}">${fmtDollars(mp.realized_pnl_dollars)}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px">
+          ${openedHtml}
+          ${currentHtml}
+          ${arrowHtml}
+        </div>
+      </div></div>`;
+    });
+  }
+
+  $("#tab-combos").innerHTML = html;
+
+  // Re-open any persisted leg trade forms
+  for (const legId of Object.keys(openLegTrades)) {
+    renderLegTradeForm(legId);
+  }
+}
+
+function toggleCombo(id) {
+  const legs = document.getElementById("legs-" + id);
+  const chev = document.getElementById("chev-" + id);
+  if (!legs) return;
+  const open = legs.style.display !== "none";
+  legs.style.display = open ? "none" : "block";
+  chev.classList.toggle("open", !open);
+  // Persist expanded state
+  if (open) {
+    expandedCombos.delete(id);
+  } else {
+    expandedCombos.add(id);
+  }
+}
+
+// ─── LEG QUICK TRADE ───
+function openLegTrade(legId, ticker, side, action, price) {
+  // Toggle off if already open with same params
+  if (openLegTrades[legId]) {
+    delete openLegTrades[legId];
+    const el = document.getElementById("qt-" + legId);
+    if (el) { el.innerHTML = ""; el.dataset.open = ""; }
+    return;
+  }
+
+  openLegTrades[legId] = { ticker, side, action, price };
+  renderLegTradeForm(legId);
+}
+
+function renderLegTradeForm(legId) {
+  const el = document.getElementById("qt-" + legId);
+  const params = openLegTrades[legId];
+  if (!el || !params) return;
+
+  const { ticker, side, action, price } = params;
+  el.dataset.open = "1";
+  el.innerHTML = `
+    <div class="leg-quick-trade">
+      <div style="font-size:12px;font-weight:600;min-width:80px">
+        <span style="color:${side === "yes" ? "var(--green)" : "var(--red)"}">${action.toUpperCase()} ${side.toUpperCase()}</span>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:1px">${ticker}</div>
+      </div>
+      <div class="field">
+        <label>Contracts</label>
+        <input id="lqt-count-${legId}" type="number" min="1" value="1">
+      </div>
+      <div class="field">
+        <label>Price (¢)</label>
+        <input id="lqt-price-${legId}" type="number" min="1" max="99" value="${price}">
+      </div>
+      <button class="lqt-btn lqt-confirm" onclick="submitLegTrade('${legId}','${ticker}','${side}','${action}')">Place Order</button>
+      <button class="lqt-btn lqt-cancel" onclick="closeLegTrade('${legId}')">Cancel</button>
+    </div>
+    <div id="lqt-result-${legId}"></div>
+  `;
+}
+
+function closeLegTrade(legId) {
+  delete openLegTrades[legId];
+  const el = document.getElementById("qt-" + legId);
+  if (el) { el.innerHTML = ""; el.dataset.open = ""; }
+}
+
+async function submitLegTrade(legId, ticker, side, action) {
+  const countEl = document.getElementById("lqt-count-" + legId);
+  const priceEl = document.getElementById("lqt-price-" + legId);
+  const resultEl = document.getElementById("lqt-result-" + legId);
+  if (!countEl || !priceEl || !resultEl) return;
+
+  const count = parseInt(countEl.value) || 1;
+  const price = parseInt(priceEl.value);
+  if (!price || price < 1 || price > 99) {
+    resultEl.innerHTML = `<div class="leg-trade-result" style="background:var(--red-bg);color:var(--red)">Price must be 1–99</div>`;
+    return;
+  }
+
+  resultEl.innerHTML = `<div class="leg-trade-result" style="background:var(--bg-elevated);color:var(--text-muted)"><span class="spinner"></span> Placing order...</div>`;
+
+  try {
+    const body = { ticker, side, action, count };
+    if (side === "yes") body.yes_price = price;
+    else body.no_price = price;
+
+    const res = await api("POST", "/portfolio/orders", body);
+    resultEl.innerHTML = `<div class="leg-trade-result" style="background:var(--green-bg);color:var(--green)">✓ Order placed — ${esc(res.order?.order_id || "OK")}</div>`;
+    // Auto-close after 3s
+    setTimeout(() => closeLegTrade(legId), 3000);
+    fetchAll();
+  } catch(e) {
+    resultEl.innerHTML = `<div class="leg-trade-result" style="background:var(--red-bg);color:var(--red)">✗ ${esc(e.message)}</div>`;
+  }
+}
+
+
+// ═══════════════════════════════════════════════
+//  PASSWORD UNLOCK FOR WRITE ACCESS
+// ═══════════════════════════════════════════════
+function showPasswordPrompt() {
+  const modal = $("#password-modal");
+  modal.style.display = "flex";
+  setTimeout(() => $("#inp-password")?.focus(), 100);
+}
+
+function hidePasswordPrompt() {
+  $("#password-modal").style.display = "none";
+  $("#inp-password").value = "";
+  $("#password-error").innerHTML = "";
+}
+
+async function doUnlockWrite() {
+  const pw = $("#inp-password").value;
+  if (!pw) return;
+  $("#password-error").innerHTML = "";
+  try {
+    const res = await fetch("/api/auth-write", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Auth failed");
+    writeToken = data.writeToken;
+    hidePasswordPrompt();
+    updateWriteUI();
+  } catch(e) {
+    $("#password-error").innerHTML = `<div class="error-banner">⚠ ${esc(e.message)}</div>`;
+  }
+}
+
+function updateWriteUI() {
+  const hasWrite = canWriteLocally();
+  const status = $("#write-status");
+  const unlockBtn = $("#btn-unlock");
+
+  if (serverConfig?.readOnly) {
+    status.style.display = "flex";
+    status.innerHTML = `<span style="color:var(--text-dim)">READ-ONLY</span>`;
+    unlockBtn.style.display = "none";
+  } else if (serverConfig?.passwordRequired) {
+    if (hasWrite) {
+      status.style.display = "flex";
+      status.innerHTML = `<span style="color:var(--green)">🔓 TRADING</span>`;
+      unlockBtn.style.display = "none";
+    } else {
+      status.style.display = "none";
+      unlockBtn.style.display = "";
+    }
+  } else {
+    // No password, full access
+    status.style.display = "none";
+    unlockBtn.style.display = "none";
+  }
+
+  // Hide disconnect/forget buttons in env mode
+  if (serverConfig?.envMode) {
+    $("#btn-disconnect").style.display = "none";
+    $("#btn-forget").style.display = "none";
+  }
+}
+
+function canWriteLocally() {
+  if (serverConfig?.readOnly) return false;
+  if (!serverConfig?.passwordRequired) return true;
+  return !!writeToken;
+}
+
+// ═══════════════════════════════════════════════
+//  STARTUP — fetch config, then connect
+// ═══════════════════════════════════════════════
+(async function init() {
+  // 1. Fetch server config
+  try {
+    const res = await fetch("/api/config");
+    serverConfig = await res.json();
+  } catch(e) {
+    serverConfig = { envMode: false, readOnly: false, passwordRequired: false };
+  }
+
+  // 2. ENV mode → auto-connect with env session, skip login
+  if (serverConfig.envMode && serverConfig.envSessionId) {
+    sessionId = serverConfig.envSessionId;
+    try {
+      const balRes = await fetch("/api/kalshi/portfolio/balance", {
+        headers: { "X-Session-Id": sessionId },
+      });
+      if (balRes.ok) {
+        balance = await balRes.json();
+        $("#login-screen").style.display = "none";
+        $("#app-screen").style.display = "block";
+        $("#env-label").textContent = serverConfig.envDemo ? "DEMO" : "LIVE";
+        updateWriteUI();
+        updateBalanceCards();
+        fetchAll();
+        startStream();
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // 3. LOCAL mode → try saved credentials, then show login
+  try {
+    const savedKeyId = localStorage.getItem("kalshi_key_id");
+    const savedPem = localStorage.getItem("kalshi_pem");
+    const savedDemo = localStorage.getItem("kalshi_demo");
+
+    if (savedKeyId && savedPem) {
+      $("#inp-key-id").value = savedKeyId;
+      $("#inp-key-pem").value = savedPem;
+      $("#inp-demo").checked = savedDemo === "1";
+      $("#inp-remember").checked = true;
+      const fd = $("#file-drop");
+      fd.textContent = "✓ Key loaded from saved credentials";
+      fd.classList.add("has-key");
+      doConnect();
+    }
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>

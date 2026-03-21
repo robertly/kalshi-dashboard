@@ -1,0 +1,11 @@
+{
+  "name": "kalshi-dashboard",
+  "version": "1.0.0",
+  "description": "Kalshi trading dashboard with combo/parlay tracking and live WebSocket prices",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
