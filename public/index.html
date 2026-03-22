@@ -36,7 +36,6 @@
     font-family: var(--font);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
   }
   a { color: var(--gold); text-decoration: none; }
 
@@ -198,7 +197,7 @@
 
   /* ─── TABLE ─── */
   .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 700px; }
   th {
     text-align: left; padding: 10px 14px; font-size: 10px; font-weight: 700;
     color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em;
@@ -344,107 +343,17 @@
   .order-result.error { background: var(--red-bg); border-color: rgba(248,113,113,0.2); color: var(--red); }
 
   /* ─── RESPONSIVE ─── */
-  @media (max-width: 768px) {
-    html { font-size: 13px; }
-    .login-card { padding: 24px 18px; max-width: 100%; }
-    .login-header h1 { font-size: 18px; }
-    .logo-mark { width: 40px; height: 40px; font-size: 20px; }
-    .field textarea { height: 100px; }
-
-    .app-header {
-      padding: 10px 14px; gap: 8px;
-      flex-direction: column; align-items: stretch;
-    }
-    .header-left { justify-content: center; }
-    .header-right {
-      justify-content: center; flex-wrap: wrap; gap: 6px;
-    }
-    .header-title { font-size: 14px; }
-    .btn-sm { padding: 6px 10px; font-size: 11px; }
-
-    .balance-row {
-      padding: 12px; gap: 8px;
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .balance-card { padding: 12px 14px; }
-    .balance-value { font-size: 20px; }
-    .balance-label { font-size: 10px; }
-
-    .tabs { padding: 0 12px; gap: 0; }
-    .tab { padding: 10px 12px; font-size: 11px; }
-
-    .content { padding: 12px; }
-    .section-title { font-size: 15px; }
-    .combo-explainer { font-size: 12px; }
-
-    /* Combo cards */
-    .combo-card { border-radius: 8px; }
-    .combo-header {
-      padding: 12px 14px;
-      flex-direction: column; align-items: stretch; gap: 10px;
-    }
-    .combo-left { gap: 8px; }
-    .combo-title { font-size: 12px; line-height: 1.5; }
-    .combo-meta { font-size: 11px; flex-wrap: wrap; }
-    .combo-right {
-      display: grid; grid-template-columns: repeat(2, 1fr);
-      gap: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle);
-    }
-    .combo-stat { align-items: flex-start; }
-    .combo-stat-label { font-size: 9px; }
-    .combo-stat-val { font-size: 12px; }
-
-    /* Leg rows */
-    .leg-row { padding: 10px 14px !important; gap: 10px !important; }
-    .leg-num { width: 36px; font-size: 9px; }
-    .leg-title { font-size: 12px; }
-    .leg-details { gap: 4px; }
-    .ticker { font-size: 9px !important; padding: 2px 4px !important; }
-
-    /* Odds boxes on mobile — stack vertically */
-    .leg-odds-row {
-      margin-left: 36px !important;
-      flex-wrap: wrap; gap: 6px;
-    }
-    .odds-box { flex-shrink: 0; }
-    .odds-side { padding: 4px 8px !important; min-width: 44px !important; }
-    .odds-val { font-size: 12px !important; }
-    .odds-label { font-size: 8px !important; }
-    .odds-mid { padding: 2px 4px !important; font-size: 9px !important; }
-
-    /* Trade buttons — wrap and smaller */
-    .leg-trade-btn { padding: 4px 8px; font-size: 10px; }
-
-    /* Quick trade form */
-    .leg-quick-trade {
-      margin-left: 36px !important;
-      flex-direction: column; align-items: stretch; gap: 8px;
-    }
-    .leg-quick-trade input { width: 100% !important; }
-
-    /* Single positions */
-    .singles-title { font-size: 14px; }
-    .single-title { font-size: 13px; }
-
-    /* Password modal */
-    #password-modal > div { margin: 12px; padding: 20px; }
-  }
-
-  @media (max-width: 420px) {
-    html { font-size: 12px; }
-    .balance-row { grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px; }
-    .balance-value { font-size: 18px; }
-    .app-header { padding: 8px 10px; }
-    .content { padding: 10px; }
-    .combo-header { padding: 10px 12px; }
-    .combo-title { font-size: 11px; }
-    .combo-right { grid-template-columns: 1fr 1fr; gap: 6px; }
-    .leg-odds-row { margin-left: 0 !important; }
-    .leg-num { display: none; }
-    .leg-quick-trade { margin-left: 0 !important; }
-    .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .tab { white-space: nowrap; }
-    .header-right .btn-sm:last-child { display: none; } /* hide Forget button on tiny screens */
+  @media (max-width: 640px) {
+    .login-card { padding: 28px 20px; }
+    .app-header { padding: 10px 16px; }
+    .balance-row { padding: 16px; gap: 8px; }
+    .content { padding: 16px; }
+    .tabs { padding: 0 16px; }
+    .tab { padding: 10px 14px; font-size: 12px; }
+    .combo-header { padding: 14px 16px; }
+    .leg-row { padding: 10px 16px; }
+    .order-form { padding: 20px 16px; }
+    .balance-value { font-size: 22px; }
   }
 
   /* loading spinner */
@@ -524,7 +433,7 @@
     content: "●"; color: var(--green); margin-right: 6px; font-size: 8px;
   }
   .score-name {
-    font-size: 13px; font-weight: 600;
+    font-size: 13px; font-weight: 600; min-width: 120px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .score-numbers {
@@ -627,30 +536,11 @@
         <span id="live-dot" style="width:8px;height:8px;border-radius:50%;background:var(--red);display:inline-block"></span>
         <span id="live-label" style="color:var(--red)">OFFLINE</span>
       </span>
-      <span id="write-status" style="display:none;font-size:11px;font-weight:600;font-family:var(--mono);display:flex;align-items:center;gap:4px"></span>
       <button class="btn-sm" onclick="fetchAll()" id="btn-refresh">↻ Refresh</button>
-      <button class="btn-sm" id="btn-unlock" style="display:none;color:var(--gold);border-color:var(--gold)" onclick="showPasswordPrompt()">🔒 Unlock Trading</button>
-      <button class="btn-sm danger" id="btn-disconnect" onclick="doDisconnect(false)">Disconnect</button>
-      <button class="btn-sm danger" id="btn-forget" onclick="doDisconnect(true)" title="Disconnect and remove saved credentials">Forget &amp; Disconnect</button>
+      <button class="btn-sm danger" onclick="doDisconnect(false)">Disconnect</button>
+      <button class="btn-sm danger" onclick="doDisconnect(true)" title="Disconnect and remove saved credentials">Forget &amp; Disconnect</button>
     </div>
   </header>
-
-  <!-- Password prompt modal -->
-  <div id="password-modal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center">
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:360px;width:100%">
-      <h3 style="font-size:16px;margin-bottom:14px">Unlock Trading</h3>
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Enter the dashboard password to enable trade placement.</p>
-      <div class="field">
-        <label>Password</label>
-        <input id="inp-password" type="password" placeholder="Enter password" onkeydown="if(event.key==='Enter')doUnlockWrite()">
-      </div>
-      <div id="password-error" style="margin-top:8px"></div>
-      <div style="display:flex;gap:8px;margin-top:16px">
-        <button class="connect-btn" style="flex:1;padding:10px 0;font-size:13px" onclick="doUnlockWrite()">Unlock</button>
-        <button class="btn-sm" style="padding:10px 16px" onclick="hidePasswordPrompt()">Cancel</button>
-      </div>
-    </div>
-  </div>
 
   <div id="app-error"></div>
 
@@ -675,10 +565,16 @@
 
   <div class="tabs" id="tabs">
     <button class="tab active" data-tab="combos">Positions</button>
+    <button class="tab" data-tab="orders">Orders</button>
+    <button class="tab" data-tab="fills">Recent Fills</button>
+    <button class="tab" data-tab="history">History</button>
   </div>
 
   <div class="content">
     <div id="tab-combos"></div>
+    <div id="tab-orders" style="display:none"></div>
+    <div id="tab-fills" style="display:none"></div>
+    <div id="tab-history" style="display:none"></div>
   </div>
 </div>
 
@@ -687,8 +583,6 @@
 //  STATE
 // ═══════════════════════════════════════════════
 let sessionId = null;
-let writeToken = null; // Password-authenticated write access token
-let serverConfig = null; // { envMode, envSessionId, readOnly, passwordRequired }
 let balance = null;
 let positions = null;
 let orders = null;
@@ -724,33 +618,9 @@ function getEntryFill(ticker) {
 }
 
 // Format combo titles: "yes Player1,yes Player2,no Player3" → multi-line with colored YES/NO and prices
-// Check if a market is effectively settled/resolved
-function isMarketDone(mkt) {
-  if (!mkt) return false;
-  const status = mkt.status;
-  if (status === "settled" || status === "finalized" || status === "closed") return true;
-  // Also treat 99-100% yes or 0-1% yes as effectively resolved
-  const ask = parseFloat(mkt.yes_ask_dollars || 0);
-  const bid = parseFloat(mkt.yes_bid_dollars || 0);
-  if (ask >= 0.99 && bid >= 0.99) return true;
-  if (ask <= 0.01 && bid <= 0.01) return true;
-  return false;
-}
-
-function getMarketResult(mkt, side) {
-  if (!mkt) return null;
-  // Explicit result
-  if (mkt.result) return mkt.result;
-  // Infer from price if at extremes
-  const ask = parseFloat(mkt.yes_ask_dollars || 0);
-  const bid = parseFloat(mkt.yes_bid_dollars || 0);
-  if (ask >= 0.99 && bid >= 0.99) return "yes";
-  if (ask <= 0.01 && bid <= 0.01) return "no";
-  return null;
-}
-
 function formatComboTitle(title, legs) {
   if (!title) return "";
+  // Check if it looks like a comma-separated list of "yes X" / "no X"
   if (!title.match(/^(yes |no )/i)) return esc(title);
   const parts = title.split(",").map(p => p.trim());
   return parts.map((p, i) => {
@@ -759,27 +629,13 @@ function formatComboTitle(title, legs) {
       const side = m[1].toUpperCase();
       const name = m[2];
       const color = side === "YES" ? "var(--green)" : "var(--red)";
-
+      // Try to find the matching leg's current price and momentum
+      let priceStr = "";
+      let arrowStr = "";
       if (legs && legs[i]) {
         const legMkt = legs[i].marketInfo;
-        const legSide = (legs[i].side || "yes").toLowerCase();
-        const legTicker = legs[i].market_ticker || "";
-
-        // Settled leg — show ✓ or ✗, no live data needed
-        if (isMarketDone(legMkt)) {
-          const result = getMarketResult(legMkt, legSide);
-          if (result) {
-            const won = (legSide === "yes" && result === "yes") || (legSide === "no" && result === "no");
-            if (won) {
-              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> ${esc(name)} <span style="color:var(--green);font-size:13px;font-weight:700">✓</span>`;
-            } else {
-              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> <span style="text-decoration:line-through;opacity:0.5">${esc(name)}</span> <span style="color:var(--red);font-size:13px;font-weight:700">✗</span>`;
-            }
-          }
-        }
-
-        // Active leg — compute initial values
         if (legMkt) {
+          const legSide = (legs[i].side || "yes").toLowerCase();
           let price, prevPrice;
           if (legSide === "yes") {
             price = parseFloat(legMkt.yes_ask_dollars || legMkt.last_price_dollars || 0);
@@ -788,24 +644,26 @@ function formatComboTitle(title, legs) {
             price = parseFloat(legMkt.no_ask_dollars || 0);
             if (!price && legMkt.yes_bid_dollars) price = 1 - parseFloat(legMkt.yes_bid_dollars);
             prevPrice = parseFloat(legMkt.previous_price_dollars || 0);
-            if (prevPrice > 0) prevPrice = 1 - prevPrice;
+            if (prevPrice > 0) prevPrice = 1 - prevPrice; // flip for no side
           }
-
-          const curCents = (price > 0 && price < 1) ? (price * 100).toFixed(0) + "¢" : "";
-          const prevCents = (prevPrice > 0 && prevPrice < 1) ? (prevPrice * 100).toFixed(0) + "¢" : "";
-          let arrowChar = "", arrowColor = "";
+          if (price > 0 && price < 1) {
+            priceStr = ` <span style="font-family:var(--mono);font-size:11px;opacity:0.8">$${price.toFixed(2)}</span>`;
+          }
+          // Momentum arrow: compare current to previous
           if (price > 0 && prevPrice > 0) {
             const diff = price - prevPrice;
-            if (diff > 0.001) { arrowChar = "▲"; arrowColor = "var(--green)"; }
-            else if (diff < -0.001) { arrowChar = "▼"; arrowColor = "var(--red)"; }
-            else { arrowChar = "─"; arrowColor = "var(--gold)"; }
+            const prevStr = `<span style="font-family:var(--mono);font-size:10px;opacity:0.6">$${prevPrice.toFixed(2)}</span>`;
+            if (diff > 0.001) {
+              arrowStr = ` <span style="color:var(--green);font-size:12px" title="Up from $${prevPrice.toFixed(2)}">▲</span> ${prevStr}`;
+            } else if (diff < -0.001) {
+              arrowStr = ` <span style="color:var(--red);font-size:12px" title="Down from $${prevPrice.toFixed(2)}">▼</span> ${prevStr}`;
+            } else {
+              arrowStr = ` <span style="color:var(--gold);font-size:12px" title="Unchanged at $${prevPrice.toFixed(2)}">─</span> ${prevStr}`;
+            }
           }
-
-          return `<span style="color:${color};font-weight:700;font-size:12px">${side} <span data-ticker="${esc(legTicker)}" data-field="title-price" data-side="${legSide}" style="font-family:var(--mono);font-size:11px;opacity:0.8">${curCents}</span></span> ${esc(name)} <span data-ticker="${esc(legTicker)}" data-field="title-arrow" data-side="${legSide}" style="font-size:12px;color:${arrowColor}">${arrowChar}</span> <span data-ticker="${esc(legTicker)}" data-field="title-prev" data-side="${legSide}" style="font-family:var(--mono);font-size:11px">${prevCents}</span>`;
         }
       }
-
-      return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> ${esc(name)}`;
+      return `<span style="color:${color};font-weight:700;font-size:12px">${side}${priceStr}</span> ${esc(name)}${arrowStr}`;
     }
     return esc(p);
   }).join("<br>");
@@ -845,9 +703,10 @@ fileDrop.addEventListener("drop", (e) => {
 
 // ─── API HELPER ───
 async function api(method, path, body) {
-  const headers = { "Content-Type": "application/json", "X-Session-Id": sessionId };
-  if (writeToken && method !== "GET") headers["X-Write-Token"] = writeToken;
-  const opts = { method, headers };
+  const opts = {
+    method,
+    headers: { "Content-Type": "application/json", "X-Session-Id": sessionId },
+  };
   if (body && method !== "GET") opts.body = JSON.stringify(body);
   const res = await fetch("/api/kalshi" + path, opts);
   const data = await res.json();
@@ -911,7 +770,6 @@ async function doConnect() {
     $("#app-screen").style.display = "block";
     $("#env-label").textContent = useDemoEnv ? "DEMO" : "LIVE";
 
-    updateWriteUI();
     updateBalanceCards();
     fetchAll();
     startStream(); // Start real-time WebSocket stream
@@ -1185,36 +1043,6 @@ function updatePricesInDOM(ticker) {
     else if (field === "last") el.textContent = "Last: " + lastPrice + "¢";
     else if (field === "yes-pct") el.textContent = "Y: " + yesAskPct;
     else if (field === "combo-pct") el.textContent = yesAskPct;
-    // Title inline prices and arrows
-    else if (field === "title-price") {
-      const s = el.dataset.side || "yes";
-      let p;
-      if (s === "yes") p = yesAskRaw;
-      else p = noAskRaw;
-      el.textContent = (p > 0 && p < 1) ? (p * 100).toFixed(0) + "¢" : "";
-    }
-    else if (field === "title-arrow" || field === "title-prev") {
-      const s = el.dataset.side || "yes";
-      let curP, prevP;
-      const prevYesAsk = parseFloat(mkt.previous_yes_ask_dollars || mkt.previous_price_dollars || 0);
-      if (s === "yes") {
-        curP = yesAskRaw;
-        prevP = prevYesAsk;
-      } else {
-        curP = noAskRaw;
-        prevP = prevYesAsk > 0 ? 1 - prevYesAsk : 0;
-      }
-      if (field === "title-arrow") {
-        if (curP > 0 && prevP > 0) {
-          const diff = curP - prevP;
-          if (diff > 0.001) { el.textContent = "▲"; el.style.color = "var(--green)"; }
-          else if (diff < -0.001) { el.textContent = "▼"; el.style.color = "var(--red)"; }
-          else { el.textContent = "─"; el.style.color = "var(--gold)"; }
-        }
-      } else {
-        el.textContent = prevP > 0 ? (prevP * 100).toFixed(0) + "¢" : "";
-      }
-    }
   });
 }
 
@@ -1230,6 +1058,8 @@ function updateBalanceCards() {
   const totalPositions = (positions?.market_positions || []).filter(p => parseFloat(p.position_fp) !== 0).length;
   const comboTab = document.querySelector('[data-tab="combos"]');
   if (comboTab) comboTab.textContent = `Positions (${totalPositions})`;
+  const ordTab = document.querySelector('[data-tab="orders"]');
+  if (ordTab) ordTab.textContent = `Orders (${(orders?.orders || []).length})`;
 }
 
 // ═══════════════════════════════════════════════
@@ -1240,7 +1070,7 @@ document.getElementById("tabs").addEventListener("click", (e) => {
     $$(".tab").forEach(t => t.classList.remove("active"));
     e.target.classList.add("active");
     activeTab = e.target.dataset.tab;
-    ["combos"].forEach(t => {
+    ["combos","orders","fills","history"].forEach(t => {
       $(`#tab-${t}`).style.display = t === activeTab ? "block" : "none";
     });
     renderAllTabs();
@@ -1300,6 +1130,9 @@ function getComboAndRegularPositions() {
 
 function renderAllTabs() {
   renderCombos();
+  renderOrders();
+  renderFills();
+  renderHistory();
 }
 
 // ─── COMBOS (Positions tab) ───
@@ -1317,17 +1150,18 @@ function renderCombos() {
       const mkt = combo.comboMarket;
       const pos = parseFloat(mp.position_fp);
       const pnl = parseFloat(mp.realized_pnl_dollars || 0);
-      const isSettled = isMarketDone(mkt);
-      const comboResult = getMarketResult(mkt);
+      const isSettled = mkt?.status === "settled";
+      const comboResult = mkt?.result;
       const legCount = combo.legs.length;
       const comboId = "combo-" + ci;
 
       // Determine combo status from legs
-      const legsSettled = combo.legs.filter(l => isMarketDone(l.marketInfo)).length;
+      const legsSettled = combo.legs.filter(l => l.marketInfo?.status === "settled").length;
       const allLegsSettled = legsSettled === legCount;
       const anyLegFailed = combo.legs.some(l => {
-        if (!isMarketDone(l.marketInfo)) return false;
-        const result = getMarketResult(l.marketInfo, l.side);
+        if (!l.marketInfo || l.marketInfo.status !== "settled") return false;
+        const result = l.marketInfo.result;
+        // If leg side is "yes", it needs result "yes" to pass; vice versa
         return (l.side === "yes" && result === "no") || (l.side === "no" && result === "yes");
       });
 
@@ -1373,12 +1207,29 @@ function renderCombos() {
           <div class="combo-right">
             ${comboEntryHtml}
             <div class="combo-stat">
+              <span class="combo-stat-label">Position</span>
+              <span class="combo-stat-val">${pos > 0 ? "+" : ""}${mp.position_fp}</span>
+            </div>
+            <div class="combo-stat">
               <span class="combo-stat-label">Exposure</span>
               <span class="combo-stat-val">${fmtDollars(mp.market_exposure_dollars)}</span>
             </div>
             <div class="combo-stat">
-              <span class="combo-stat-label">Payout</span>
-              <span class="combo-stat-val">${pos > 0 ? "+" : ""}${mp.position_fp}</span>
+              <span class="combo-stat-label">Current Price</span>
+              <div style="display:flex;gap:4px;margin-top:4px">
+                <div class="odds-box" style="font-size:11px">
+                  <div class="odds-side odds-yes" style="padding:3px 8px">
+                    <span class="odds-label" style="font-size:8px">YES</span>
+                    <span class="odds-val" style="font-size:12px" data-ticker="${esc(mp.ticker)}" data-field="yes-ask">${mkt?.last_price_dollars ? (parseFloat(mkt.last_price_dollars) * 100).toFixed(0) + "¢" : "—"}</span>
+                  </div>
+                </div>
+                <div class="odds-box" style="font-size:11px">
+                  <div class="odds-side odds-no" style="padding:3px 8px">
+                    <span class="odds-label" style="font-size:8px">NO</span>
+                    <span class="odds-val" style="font-size:12px" data-ticker="${esc(mp.ticker)}" data-field="no-ask">${mkt?.last_price_dollars ? (100 - parseFloat(mkt.last_price_dollars) * 100).toFixed(0) + "¢" : "—"}</span>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="combo-stat">
               <span class="combo-stat-label">P&L</span>
@@ -1394,8 +1245,8 @@ function renderCombos() {
 
       combo.legs.forEach((leg, li) => {
         const legMkt = leg.marketInfo;
-        const legSettled = isMarketDone(legMkt);
-        const legResult = getMarketResult(legMkt, leg.side);
+        const legSettled = legMkt?.status === "settled";
+        const legResult = legMkt?.result;
         const legSide = leg.side || "yes";
         const legId = `${comboId}-leg-${li}`;
 
@@ -1459,12 +1310,10 @@ function renderCombos() {
             </div>
             <span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)" data-ticker="${esc(leg.market_ticker)}" data-field="last">Last: ${lastPrice}¢</span>
             <div style="flex:1"></div>
-            ${canWriteLocally() ? `
             <button class="leg-trade-btn buy-yes" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','yes','buy',${yesAsk === "—" ? 50 : yesAsk})">Buy Yes</button>
             <button class="leg-trade-btn buy-no" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','no','buy',${noAsk === "—" ? 50 : noAsk})">Buy No</button>
             <button class="leg-trade-btn buy-yes" style="opacity:0.6" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','yes','sell',${yesBid === "—" ? 50 : yesBid})">Sell Yes</button>
             <button class="leg-trade-btn buy-no" style="opacity:0.6" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','no','sell',${noBid === "—" ? 50 : noBid})">Sell No</button>
-            ` : ""}
           </div>
           <div id="qt-${legId}" style="margin-left:62px"></div>
           ` : ""}
@@ -1477,91 +1326,38 @@ function renderCombos() {
 
   // Also show regular (non-combo) positions grouped by event for context
   if (regulars.length > 0) {
-    html += `<h3 class="singles-title">Single Positions</h3>`;
+    html += `<h3 class="singles-title">Single Positions (non-combo)</h3>`;
     regulars.forEach(({ position: mp, marketInfo: mkt }) => {
       const pos = parseFloat(mp.position_fp);
       const pnl = parseFloat(mp.realized_pnl_dollars || 0);
-      const done = isMarketDone(mkt);
-      const result = getMarketResult(mkt);
       const singleEntry = getEntryFill(mp.ticker);
-
-      // Determine side from entry fill or position direction
-      const side = singleEntry?.side || (pos > 0 ? "yes" : "no");
-
-      // Entry price
-      let openedHtml = "";
+      let singleEntryHtml = "";
       if (singleEntry) {
-        const ePrice = side === "yes"
-          ? (singleEntry.yes_price_dollars ? (parseFloat(singleEntry.yes_price_dollars) * 100).toFixed(0) : "—")
-          : (singleEntry.no_price_dollars ? (parseFloat(singleEntry.no_price_dollars) * 100).toFixed(0) : "—");
-        openedHtml = `<div class="odds-box" style="display:inline-flex">
-            <div class="odds-side ${side === "yes" ? "odds-yes" : "odds-no"}" style="opacity:0.7;padding:3px 8px">
-              <span class="odds-label" style="font-size:8px">OPENED ${side.toUpperCase()}</span>
+        const eSide = singleEntry.side || "yes";
+        const ePrice = eSide === "yes"
+          ? (singleEntry.yes_price || (singleEntry.yes_price_dollars ? (parseFloat(singleEntry.yes_price_dollars) * 100).toFixed(0) : "—"))
+          : (singleEntry.no_price || (singleEntry.no_price_dollars ? (parseFloat(singleEntry.no_price_dollars) * 100).toFixed(0) : "—"));
+        singleEntryHtml = `<div class="odds-box" style="display:inline-flex">
+            <div class="odds-side ${eSide === "yes" ? "odds-yes" : "odds-no"}" style="opacity:0.7;padding:3px 8px">
+              <span class="odds-label" style="font-size:8px">OPENED ${eSide.toUpperCase()}</span>
               <span class="odds-val" style="font-size:12px">${ePrice}¢</span>
             </div>
           </div>`;
       }
-
-      // Current prices and arrow
-      let currentHtml = "";
-      let arrowHtml = "";
-      if (done && result) {
-        // Settled — show ✓ or ✗
-        const won = (side === "yes" && result === "yes") || (side === "no" && result === "no");
-        currentHtml = `<span class="badge ${won ? "badge-yes" : "badge-no"}" style="font-weight:700">${won ? "✓ WON" : "✗ LOST"}</span>`;
-      } else if (mkt) {
-        // Active — show YES/NO boxes with live data
-        const yesAsk = parseFloat(mkt.yes_ask_dollars || mkt.last_price_dollars || 0);
-        const noAsk = parseFloat(mkt.no_ask_dollars || 0) || (yesAsk > 0 ? 1 - parseFloat(mkt.yes_bid_dollars || 0) : 0);
-        const yesBid = parseFloat(mkt.yes_bid_dollars || 0);
-        const noBid = parseFloat(mkt.no_bid_dollars || 0) || (yesBid > 0 ? 1 - yesAsk : 0);
-        currentHtml = `
-          <div class="odds-box" style="display:inline-flex">
-            <div class="odds-side odds-yes" style="padding:3px 8px">
-              <span class="odds-label" style="font-size:8px">YES</span>
-              <span class="odds-val" style="font-size:12px" data-ticker="${esc(mp.ticker)}" data-field="yes-ask">${yesAsk > 0 ? (yesAsk * 100).toFixed(0) + "¢" : "—"}</span>
-            </div>
-          </div>
-          <div class="odds-box" style="display:inline-flex">
-            <div class="odds-side odds-no" style="padding:3px 8px">
-              <span class="odds-label" style="font-size:8px">NO</span>
-              <span class="odds-val" style="font-size:12px" data-ticker="${esc(mp.ticker)}" data-field="no-ask">${noAsk > 0 ? (noAsk * 100).toFixed(0) + "¢" : "—"}</span>
-            </div>
-          </div>`;
-
-        // Momentum arrow
-        const prevPrice = parseFloat(mkt.previous_yes_ask_dollars || mkt.previous_price_dollars || 0);
-        let curP = side === "yes" ? yesAsk : noAsk;
-        let prevP = side === "yes" ? prevPrice : (prevPrice > 0 ? 1 - prevPrice : 0);
-        if (curP > 0 && prevP > 0) {
-          const diff = curP - prevP;
-          let arrow, aColor;
-          if (diff > 0.001) { arrow = "▲"; aColor = "var(--green)"; }
-          else if (diff < -0.001) { arrow = "▼"; aColor = "var(--red)"; }
-          else { arrow = "─"; aColor = "var(--gold)"; }
-          arrowHtml = `<span data-ticker="${esc(mp.ticker)}" data-field="title-arrow" data-side="${side}" style="font-size:12px;color:${aColor}">${arrow}</span>
-            <span data-ticker="${esc(mp.ticker)}" data-field="title-prev" data-side="${side}" style="font-family:var(--mono);font-size:10px;opacity:0.6">$${prevP.toFixed(2)}</span>`;
-        }
-      }
-
-      html += `<div class="combo-card"><div style="padding:14px 20px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
-          <div>
-            <div class="single-title">${esc(mkt?.title || mp.ticker)}</div>
-            <div class="single-meta">
-              <span class="ticker">${esc(mp.ticker)}</span>
-              ${mkt?.event_ticker ? `<span style="margin-left:8px;color:var(--text-dim)">${esc(mkt.event_ticker)}</span>` : ""}
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-            <span class="badge ${pos > 0 ? "badge-yes" : pos < 0 ? "badge-no" : "badge-neutral"}">${pos > 0 ? "+" : ""}${mp.position_fp}</span>
-            <span style="font:600 13px/1 var(--mono);color:${pnl >= 0 ? "var(--green)" : "var(--red)"}">${fmtDollars(mp.realized_pnl_dollars)}</span>
+      html += `<div class="combo-card"><div class="single-row">
+        <div>
+          <div class="single-title">${esc(mkt?.title || mp.ticker)}</div>
+          <div class="single-meta">
+            <span class="ticker">${esc(mp.ticker)}</span>
+            ${mkt?.status ? `<span style="margin-left:8px">${esc(mkt.status)}</span>` : ""}
+            ${mkt?.event_ticker ? `<span style="margin-left:8px;color:var(--text-dim)">${esc(mkt.event_ticker)}</span>` : ""}
           </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:10px">
-          ${openedHtml}
-          ${currentHtml}
-          ${arrowHtml}
+        <div class="single-right">
+          <span class="badge ${pos > 0 ? "badge-yes" : "badge-no"}">${pos > 0 ? "+" : ""}${mp.position_fp}</span>
+          ${singleEntryHtml}
+          ${mkt ? `<span class="price-chip">Y: ${pctFrom(mkt.yes_ask_dollars || mkt.last_price_dollars || 0)}</span>` : ""}
+          <span style="font:600 13px/1 var(--mono);color:${pnl >= 0 ? "var(--green)" : "var(--red)"}">${fmtDollars(mp.realized_pnl_dollars)}</span>
         </div>
       </div></div>`;
     });
@@ -1668,129 +1464,278 @@ async function submitLegTrade(legId, ticker, side, action) {
   }
 }
 
-
-// ═══════════════════════════════════════════════
-//  PASSWORD UNLOCK FOR WRITE ACCESS
-// ═══════════════════════════════════════════════
-function showPasswordPrompt() {
-  const modal = $("#password-modal");
-  modal.style.display = "flex";
-  setTimeout(() => $("#inp-password")?.focus(), 100);
+// ─── ORDERS ───
+function renderOrders() {
+  const ords = orders?.orders || [];
+  if (ords.length === 0) {
+    $("#tab-orders").innerHTML = `<h2 class="section-title">Resting Orders</h2><div class="empty-state">No resting orders.</div>`;
+    return;
+  }
+  let html = `<h2 class="section-title">Resting Orders</h2><div class="table-wrap"><table><thead><tr>
+    <th>Ticker</th><th>Side</th><th>Action</th><th>Price</th><th>Qty</th><th>Filled</th><th>Created</th><th></th>
+  </tr></thead><tbody>`;
+  ords.forEach(o => {
+    const priceStr = o.yes_price_dollars ? `Y: ${fmtDollars(o.yes_price_dollars)}` : `N: ${fmtDollars(o.no_price_dollars)}`;
+    html += `<tr>
+      <td><span class="ticker">${esc(o.ticker)}</span></td>
+      <td><span class="badge ${o.side === "yes" ? "badge-yes" : "badge-no"}">${o.side.toUpperCase()}</span></td>
+      <td>${(o.action || "").toUpperCase()}</td>
+      <td>${priceStr}</td>
+      <td>${o.remaining_count_fp || o.initial_count_fp}</td>
+      <td>${o.fill_count_fp || "0"}</td>
+      <td style="font-size:12px">${new Date(o.created_time).toLocaleString()}</td>
+      <td><button class="cancel-btn" onclick="cancelOrder('${esc(o.order_id)}')">✕ Cancel</button></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  $("#tab-orders").innerHTML = html;
 }
 
-function hidePasswordPrompt() {
-  $("#password-modal").style.display = "none";
-  $("#inp-password").value = "";
-  $("#password-error").innerHTML = "";
-}
-
-async function doUnlockWrite() {
-  const pw = $("#inp-password").value;
-  if (!pw) return;
-  $("#password-error").innerHTML = "";
+async function cancelOrder(orderId) {
   try {
-    const res = await fetch("/api/auth-write", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pw }),
+    await api("DELETE", `/portfolio/orders/${orderId}`);
+    fetchAll();
+  } catch(e) {
+    alert("Cancel failed: " + e.message);
+  }
+}
+
+// ─── FILLS ───
+function renderFills() {
+  const ff = fills?.fills || [];
+  if (ff.length === 0) {
+    $("#tab-fills").innerHTML = `<h2 class="section-title">Recent Fills</h2><div class="empty-state">No recent fills.</div>`;
+    return;
+  }
+  let html = `<h2 class="section-title">Recent Fills</h2><div class="table-wrap"><table><thead><tr>
+    <th>Ticker</th><th>Side</th><th>Action</th><th>Qty</th><th>Yes Price</th><th>No Price</th><th>Taker?</th><th>Time</th>
+  </tr></thead><tbody>`;
+  ff.forEach(f => {
+    html += `<tr>
+      <td><span class="ticker">${esc(f.ticker)}</span></td>
+      <td><span class="badge ${f.side === "yes" ? "badge-yes" : "badge-no"}">${f.side.toUpperCase()}</span></td>
+      <td>${(f.action || "").toUpperCase()}</td>
+      <td>${f.count || f.count_fp || "—"}</td>
+      <td>${f.yes_price ? f.yes_price + "¢" : fmtDollars(f.yes_price_dollars)}</td>
+      <td>${f.no_price ? f.no_price + "¢" : fmtDollars(f.no_price_dollars)}</td>
+      <td>${f.is_taker ? "Yes" : "No"}</td>
+      <td style="font-size:12px">${new Date(f.created_time).toLocaleString()}</td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  $("#tab-fills").innerHTML = html;
+}
+
+// ─── HISTORY ───
+let historyData = null;
+let historySettlements = null;
+let historyLoading = false;
+let historyLoaded = false;
+
+function renderHistory() {
+  if (!historyLoaded && !historyLoading) {
+    $("#tab-history").innerHTML = `<h2 class="section-title">Trade History</h2>
+      <p style="color:var(--text-muted);margin-bottom:16px">Full history of all your trades, fills, and settled positions.</p>
+      <button class="search-btn" onclick="loadHistory()" style="padding:12px 28px;font-size:14px">Load Trade History</button>`;
+    return;
+  }
+  if (historyLoading) {
+    $("#tab-history").innerHTML = `<h2 class="section-title">Trade History</h2>
+      <div style="text-align:center;padding:40px"><span class="spinner"></span> Loading history...</div>`;
+    return;
+  }
+
+  const allFills = historyData || [];
+  const settlements = historySettlements || [];
+
+  let html = `<h2 class="section-title">Trade History</h2>
+    <div style="display:flex;gap:12px;margin-bottom:16px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:13px;color:var(--text-muted)">${allFills.length} fills · ${settlements.length} settlements</span>
+      <button class="search-btn" onclick="loadHistory()" style="font-size:12px;padding:6px 14px">↻ Reload</button>
+    </div>`;
+
+  // ── Settlements section ──
+  if (settlements.length > 0) {
+    // Calculate total P&L across all settlements
+    let totalPnl = 0;
+    let totalRevenue = 0;
+    let totalCost = 0;
+    let totalFees = 0;
+    settlements.forEach(s => {
+      const rev = parseFloat(s.revenue || 0) / 100; // revenue is in cents
+      const yesCost = parseFloat(s.yes_total_cost_dollars || 0);
+      const noCost = parseFloat(s.no_total_cost_dollars || 0);
+      const fees = parseFloat(s.fee_cost || 0);
+      const pnl = rev - yesCost - noCost - fees;
+      totalPnl += pnl;
+      totalRevenue += rev;
+      totalCost += yesCost + noCost;
+      totalFees += fees;
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Auth failed");
-    writeToken = data.writeToken;
-    hidePasswordPrompt();
-    updateWriteUI();
-  } catch(e) {
-    $("#password-error").innerHTML = `<div class="error-banner">⚠ ${esc(e.message)}</div>`;
+
+    html += `<h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text-muted)">Settled Positions</h3>
+    <div style="display:flex;gap:20px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-size:13px"><span style="color:var(--text-dim)">Total P&L:</span> <span style="font:700 16px/1 var(--mono);color:${totalPnl >= 0 ? "var(--green)" : "var(--red)"}">${totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}</span></div>
+      <div style="font-size:12px;color:var(--text-dim)">Revenue: $${totalRevenue.toFixed(2)} · Cost: $${totalCost.toFixed(2)} · Fees: $${totalFees.toFixed(2)}</div>
+    </div>
+    <div class="table-wrap" style="margin-bottom:24px"><table><thead><tr>
+      <th>Ticker</th><th>Side</th><th>Result</th><th>Cost</th><th>Revenue</th><th>Fees</th><th>P&L</th><th>Settled</th>
+    </tr></thead><tbody>`;
+    settlements.forEach(s => {
+      const rev = parseFloat(s.revenue || 0) / 100;
+      const yesCost = parseFloat(s.yes_total_cost_dollars || 0);
+      const noCost = parseFloat(s.no_total_cost_dollars || 0);
+      const cost = yesCost + noCost;
+      const fees = parseFloat(s.fee_cost || 0);
+      const pnl = rev - cost - fees;
+      const yesQty = parseFloat(s.yes_count_fp || 0);
+      const noQty = parseFloat(s.no_count_fp || 0);
+      const side = yesQty > 0 ? "yes" : (noQty > 0 ? "no" : "—");
+      const won = s.market_result && ((side === "yes" && s.market_result === "yes") || (side === "no" && s.market_result === "no"));
+      html += `<tr>
+        <td>
+          <span class="ticker">${esc(s.ticker || "")}</span>
+          ${marketCache[s.ticker]?.title ? `<div class="mkt-title">${esc(marketCache[s.ticker].title)}</div>` : ""}
+        </td>
+        <td><span class="badge ${side === "yes" ? "badge-yes" : side === "no" ? "badge-no" : "badge-neutral"}">${side.toUpperCase()}</span></td>
+        <td><span class="badge ${won ? "badge-yes" : "badge-no"}">${won ? "✓ WON" : "✗ LOST"}</span></td>
+        <td>$${cost.toFixed(2)}</td>
+        <td>$${rev.toFixed(2)}</td>
+        <td>$${fees.toFixed(2)}</td>
+        <td style="color:${pnl >= 0 ? "var(--green)" : "var(--red)"};font:600 13px/1 var(--mono)">${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}</td>
+        <td style="font-size:12px">${s.settled_time ? new Date(s.settled_time).toLocaleString() : "—"}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
   }
+
+  // ── All fills section ──
+  if (allFills.length > 0) {
+    html += `<h3 style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--text-muted)">All Fills</h3>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Ticker</th><th>Side</th><th>Action</th><th>Qty</th><th>Yes Price</th><th>No Price</th><th>Taker?</th><th>Time</th>
+    </tr></thead><tbody>`;
+    allFills.forEach(f => {
+      html += `<tr>
+        <td>
+          <span class="ticker">${esc(f.ticker)}</span>
+          ${marketCache[f.ticker]?.title ? `<div class="mkt-title">${esc(marketCache[f.ticker].title)}</div>` : ""}
+        </td>
+        <td><span class="badge ${f.side === "yes" ? "badge-yes" : "badge-no"}">${(f.side || "").toUpperCase()}</span></td>
+        <td>${(f.action || "").toUpperCase()}</td>
+        <td>${f.count || f.count_fp || "—"}</td>
+        <td>${f.yes_price ? f.yes_price + "¢" : fmtDollars(f.yes_price_dollars)}</td>
+        <td>${f.no_price ? f.no_price + "¢" : fmtDollars(f.no_price_dollars)}</td>
+        <td>${f.is_taker ? "Yes" : "No"}</td>
+        <td style="font-size:12px">${new Date(f.created_time).toLocaleString()}</td>
+      </tr>`;
+    });
+    html += `</tbody></table></div>`;
+  }
+
+  if (allFills.length === 0 && settlements.length === 0) {
+    html += `<div class="empty-state">No trade history found.</div>`;
+  }
+
+  $("#tab-history").innerHTML = html;
 }
 
-function updateWriteUI() {
-  const hasWrite = canWriteLocally();
-  const status = $("#write-status");
-  const unlockBtn = $("#btn-unlock");
+async function loadHistory() {
+  historyLoading = true;
+  historyLoaded = false;
+  renderHistory();
 
-  if (serverConfig?.readOnly) {
-    status.style.display = "flex";
-    status.innerHTML = `<span style="color:var(--text-dim)">READ-ONLY</span>`;
-    unlockBtn.style.display = "none";
-  } else if (serverConfig?.passwordRequired) {
-    if (hasWrite) {
-      status.style.display = "flex";
-      status.innerHTML = `<span style="color:var(--green)">🔓 TRADING</span>`;
-      unlockBtn.style.display = "none";
-    } else {
-      status.style.display = "none";
-      unlockBtn.style.display = "";
-    }
-  } else {
-    // No password, full access
-    status.style.display = "none";
-    unlockBtn.style.display = "none";
-  }
-
-  // Hide disconnect/forget buttons in env mode
-  if (serverConfig?.envMode) {
-    $("#btn-disconnect").style.display = "none";
-    $("#btn-forget").style.display = "none";
-  }
-}
-
-function canWriteLocally() {
-  if (serverConfig?.readOnly) return false;
-  if (!serverConfig?.passwordRequired) return true;
-  return !!writeToken;
-}
-
-// ═══════════════════════════════════════════════
-//  STARTUP — fetch config, then connect
-// ═══════════════════════════════════════════════
-(async function init() {
-  // 1. Fetch server config
   try {
-    const res = await fetch("/api/config");
-    serverConfig = await res.json();
+    // Fetch all fills with pagination
+    let allFills = [];
+    let cursor = "";
+    let pages = 0;
+    do {
+      const url = `/portfolio/fills?limit=200${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`;
+      const res = await api("GET", url);
+      const batch = res.fills || [];
+      allFills = allFills.concat(batch);
+      cursor = res.cursor || "";
+      pages++;
+      // Safety: max 20 pages (4000 fills)
+    } while (cursor && pages < 20);
+
+    // Fetch settlements
+    let allSettlements = [];
+    cursor = "";
+    pages = 0;
+    do {
+      const url = `/portfolio/settlements?limit=200${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`;
+      const res = await api("GET", url);
+      const batch = res.settlements || [];
+      allSettlements = allSettlements.concat(batch);
+      cursor = res.cursor || "";
+      pages++;
+    } while (cursor && pages < 20);
+
+    // Sort fills newest first
+    allFills.sort((a, b) => new Date(b.created_time) - new Date(a.created_time));
+    allSettlements.sort((a, b) => {
+      const ta = a.settled_time || a.settlement_time || "";
+      const tb = b.settled_time || b.settlement_time || "";
+      return new Date(tb) - new Date(ta);
+    });
+
+    // Fetch market details for tickers we haven't seen
+    const newTickers = new Set();
+    allFills.forEach(f => { if (f.ticker && !marketCache[f.ticker]) newTickers.add(f.ticker); });
+    allSettlements.forEach(s => {
+      const t = s.ticker || s.market_ticker;
+      if (t && !marketCache[t]) newTickers.add(t);
+    });
+    await Promise.allSettled([...newTickers].slice(0, 50).map(async t => {
+      try {
+        const r = await api("GET", `/markets/${t}`);
+        marketCache[t] = r.market || r;
+      } catch(e) {}
+    }));
+
+    historyData = allFills;
+    historySettlements = allSettlements;
+    historyLoaded = true;
   } catch(e) {
-    serverConfig = { envMode: false, readOnly: false, passwordRequired: false };
+    historyData = [];
+    historySettlements = [];
+    historyLoaded = true;
+    console.error("[history] Error:", e);
   }
 
-  // 2. ENV mode → auto-connect with env session, skip login
-  if (serverConfig.envMode && serverConfig.envSessionId) {
-    sessionId = serverConfig.envSessionId;
-    try {
-      const balRes = await fetch("/api/kalshi/portfolio/balance", {
-        headers: { "X-Session-Id": sessionId },
-      });
-      if (balRes.ok) {
-        balance = await balRes.json();
-        $("#login-screen").style.display = "none";
-        $("#app-screen").style.display = "block";
-        $("#env-label").textContent = serverConfig.envDemo ? "DEMO" : "LIVE";
-        updateWriteUI();
-        updateBalanceCards();
-        fetchAll();
-        startStream();
-        return;
-      }
-    } catch(e) {}
-  }
+  historyLoading = false;
+  renderHistory();
+}
 
-  // 3. LOCAL mode → try saved credentials, then show login
+// ═══════════════════════════════════════════════
+//  AUTO-LOAD SAVED CREDENTIALS ON PAGE LOAD
+// ═══════════════════════════════════════════════
+(function initFromSaved() {
   try {
     const savedKeyId = localStorage.getItem("kalshi_key_id");
     const savedPem = localStorage.getItem("kalshi_pem");
     const savedDemo = localStorage.getItem("kalshi_demo");
 
     if (savedKeyId && savedPem) {
+      // Populate fields
       $("#inp-key-id").value = savedKeyId;
       $("#inp-key-pem").value = savedPem;
       $("#inp-demo").checked = savedDemo === "1";
       $("#inp-remember").checked = true;
+
+      // Show that a key is loaded
       const fd = $("#file-drop");
       fd.textContent = "✓ Key loaded from saved credentials";
       fd.classList.add("has-key");
+
+      // Auto-connect
       doConnect();
     }
-  } catch(e) {}
+  } catch(e) {
+    // localStorage not available, no-op
+  }
 })();
 </script>
 </body>
