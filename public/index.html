@@ -451,6 +451,19 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.6s linear infinite; }
 
+  /* ─── SCORE BADGES ─── */
+  .score-badge {
+    display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 700;
+    padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
+    white-space: nowrap;
+  }
+  .score-won { background: var(--green-bg); color: var(--green); }
+  .score-lost { background: var(--red-bg); color: var(--red); }
+  .score-live { background: rgba(255, 180, 0, 0.12); color: var(--gold); }
+  .score-sched { background: var(--bg-elevated); color: var(--text-dim); }
+  .score-live-dot { animation: pulse 1.2s ease-in-out infinite; margin-right: 2px; font-size: 8px; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
   /* ─── LEG ODDS & QUICK TRADE ─── */
   .leg-odds-row {
     display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap;
@@ -561,7 +574,7 @@
 <body>
 
 <!-- ═══════════════ LOGIN ═══════════════ -->
-<div id="login-screen" class="login-wrap">
+<div id="login-screen" class="login-wrap" style="display:none">
   <div class="login-card">
     <div class="login-header">
       <div class="logo-mark">K</div>
@@ -697,6 +710,8 @@ let marketCache = {};
 let eventCache = {};
 let milestoneCache = {}; // event_ticker -> milestone object
 let liveDataCache = {};  // event_ticker -> live_data object (scores etc)
+let espnMatches = [];    // ESPN scoreboard matches
+let espnByName = {};     // surname -> ESPN match (for quick lookup)
 let activeTab = "combos";
 let expandedCombos = new Set(); // Track which combo cards are expanded
 let openLegTrades = {}; // Track which leg trade forms are open: { legId: {ticker, side, action, price} }
@@ -764,6 +779,9 @@ function formatComboTitle(title, legs) {
         const legMkt = legs[i].marketInfo;
         const legSide = (legs[i].side || "yes").toLowerCase();
         const legTicker = legs[i].market_ticker || "";
+        const legEventTitle = legs[i].eventInfo?.title || "";
+        const espnMatch = findESPNMatch(legEventTitle);
+        const scoreBadge = espnMatch ? formatScoreBadge(espnMatch, name) : "";
 
         // Settled leg — show ✓ or ✗, no live data needed
         if (isMarketDone(legMkt)) {
@@ -771,9 +789,9 @@ function formatComboTitle(title, legs) {
           if (result) {
             const won = (legSide === "yes" && result === "yes") || (legSide === "no" && result === "no");
             if (won) {
-              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> ${esc(name)} <span style="color:var(--green);font-size:13px;font-weight:700">✓</span>`;
+              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> ${esc(name)}${scoreBadge} <span style="color:var(--green);font-size:13px;font-weight:700">✓</span>`;
             } else {
-              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> <span style="text-decoration:line-through;opacity:0.5">${esc(name)}</span> <span style="color:var(--red);font-size:13px;font-weight:700">✗</span>`;
+              return `<span style="color:${color};font-weight:700;font-size:12px">${side}</span> <span style="text-decoration:line-through;opacity:0.5">${esc(name)}</span>${scoreBadge} <span style="color:var(--red);font-size:13px;font-weight:700">✗</span>`;
             }
           }
         }
@@ -801,7 +819,7 @@ function formatComboTitle(title, legs) {
             else { arrowChar = "─"; arrowColor = "var(--gold)"; }
           }
 
-          return `<span style="color:${color};font-weight:700;font-size:12px">${side} <span data-ticker="${esc(legTicker)}" data-field="title-price" data-side="${legSide}" style="font-family:var(--mono);font-size:11px;opacity:0.8">${curCents}</span></span> ${esc(name)} <span data-ticker="${esc(legTicker)}" data-field="title-arrow" data-side="${legSide}" style="font-size:12px;color:${arrowColor}">${arrowChar}</span> <span data-ticker="${esc(legTicker)}" data-field="title-prev" data-side="${legSide}" style="font-family:var(--mono);font-size:11px">${prevCents}</span>`;
+          return `<span style="color:${color};font-weight:700;font-size:12px">${side} <span data-ticker="${esc(legTicker)}" data-field="title-price" data-side="${legSide}" style="font-family:var(--mono);font-size:11px;opacity:0.8">${curCents}</span></span> ${esc(name)}${scoreBadge} <span data-ticker="${esc(legTicker)}" data-field="title-arrow" data-side="${legSide}" style="font-size:12px;color:${arrowColor}">${arrowChar}</span> <span data-ticker="${esc(legTicker)}" data-field="title-prev" data-side="${legSide}" style="font-family:var(--mono);font-size:11px">${prevCents}</span>`;
         }
       }
 
@@ -1028,6 +1046,9 @@ async function fetchAll() {
       } catch(e) {}
     }));
 
+    // ── Step 4: Fetch ESPN live scores ──
+    await fetchESPNScores();
+
     updateBalanceCards();
     renderAllTabs();
     $("#refresh-time").textContent = new Date().toLocaleTimeString();
@@ -1040,6 +1061,130 @@ async function fetchAll() {
 }
 
 // ═══════════════════════════════════════════════
+//  ESPN LIVE SCORES
+// ═══════════════════════════════════════════════
+function extractSurname(fullName) {
+  if (!fullName) return "";
+  const words = fullName.trim().split(/\s+/);
+  let surname = words[words.length - 1].toLowerCase();
+  // Handle Jr, Sr, III etc
+  if (surname === "jr" || surname === "jr." || surname === "sr" || surname === "sr." || surname === "ii" || surname === "iii" || surname === "iv") {
+    surname = words.length > 1 ? words[words.length - 2].toLowerCase() : surname;
+  }
+  return surname.replace(/[^a-z]/g, "");
+}
+
+function extractNamesFromTitle(title) {
+  if (!title) return [];
+  const clean = title.replace(/^.*:\s*/, ""); // strip "UFC Fight Night: " etc
+  const parts = clean.split(/\s+vs\.?\s+/i);
+  return parts.map(p => extractSurname(p)).filter(n => n.length > 2);
+}
+
+async function fetchESPNScores() {
+  try {
+    const res = await fetch("/api/scores");
+    if (!res.ok) return;
+    const data = await res.json();
+    espnMatches = data.matches || [];
+    // Build surname index — map surname to array of matches containing that name
+    espnByName = {};
+    espnMatches.forEach(m => {
+      [m.p1, m.p2].forEach(name => {
+        const sn = extractSurname(name);
+        if (sn.length > 2) {
+          if (!espnByName[sn]) espnByName[sn] = [];
+          espnByName[sn].push(m);
+        }
+      });
+    });
+  } catch(e) {
+    console.warn("[espn] Score fetch failed:", e.message);
+  }
+}
+
+// Find ESPN match for a Kalshi event title by matching BOTH player surnames
+function findESPNMatch(eventTitle) {
+  const names = extractNamesFromTitle(eventTitle);
+  if (names.length < 2) return null;
+  // Find a match where both names appear
+  const candidates = espnByName[names[0]] || [];
+  return candidates.find(m => {
+    const mNames = [extractSurname(m.p1), extractSurname(m.p2)];
+    return names.every(n => mNames.includes(n));
+  }) || null;
+}
+
+// Format score badge for display
+function formatScoreBadge(match, playerName) {
+  if (!match) return "";
+  const sn = extractSurname(playerName);
+  const isP1 = extractSurname(match.p1) === sn;
+  const status = match.status || "";
+  const detail = match.detail || "";
+
+  if (match.sport === "tennis") {
+    const mySets = isP1 ? match.s1 : match.s2;
+    const oppSets = isP1 ? match.s2 : match.s1;
+    if (!mySets || mySets.length === 0) {
+      if (status === "STATUS_SCHEDULED") return `<span class="score-badge score-sched">Sched</span>`;
+      return "";
+    }
+    const setStrs = mySets.map((s, i) => {
+      const opp = oppSets?.[i] ?? "";
+      return `${s}-${opp}`;
+    });
+    const scoreText = setStrs.join(" ");
+    const won = isP1 ? match.w1 : match.w2;
+    const lost = (isP1 ? match.w2 : match.w1);
+    if (status === "STATUS_FINAL") {
+      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${scoreText} ${won ? "W" : "L"}</span>`;
+    }
+    // In progress
+    return `<span class="score-badge score-live">${scoreText} <span class="score-live-dot">●</span>${detail}</span>`;
+  }
+
+  if (match.sport === "mma") {
+    const won = isP1 ? match.w1 : match.w2;
+    const lost = isP1 ? match.w2 : match.w1;
+    if (status === "STATUS_FINAL") {
+      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${won ? "W" : "L"} ${detail}</span>`;
+    }
+    if (status === "STATUS_IN_PROGRESS") {
+      return `<span class="score-badge score-live">LIVE ${detail}</span>`;
+    }
+    if (status === "STATUS_SCHEDULED") return `<span class="score-badge score-sched">Sched</span>`;
+    return "";
+  }
+
+  if (match.sport === "ncaamb") {
+    const myScore = isP1 ? match.score1 : match.score2;
+    const oppScore = isP1 ? match.score2 : match.score1;
+    const won = isP1 ? match.w1 : match.w2;
+    if (status === "STATUS_FINAL") {
+      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${myScore}-${oppScore} ${won ? "W" : "L"}</span>`;
+    }
+    if (status === "STATUS_IN_PROGRESS") {
+      return `<span class="score-badge score-live">${myScore}-${oppScore} ${detail}</span>`;
+    }
+    if (status === "STATUS_SCHEDULED") return `<span class="score-badge score-sched">Sched</span>`;
+    return "";
+  }
+  return "";
+}
+
+// Auto-refresh scores every 30s
+let scoreRefreshInterval = null;
+function startScoreRefresh() {
+  if (scoreRefreshInterval) clearInterval(scoreRefreshInterval);
+  scoreRefreshInterval = setInterval(async () => {
+    await fetchESPNScores();
+    // Re-render just the combo titles (lightweight)
+    renderAllTabs();
+  }, 30000);
+}
+
+// ═══════════════════════════════════════════════
 //  REAL-TIME STREAMING (SSE ← Server ← Kalshi WS)
 // ═══════════════════════════════════════════════
 let eventSource = null;
@@ -1048,6 +1193,8 @@ let liveIndicator = false;
 function startStream() {
   if (eventSource) { eventSource.close(); }
   if (!sessionId) return;
+
+  startScoreRefresh(); // Auto-refresh ESPN scores every 30s
 
   eventSource = new EventSource(`/api/stream?session=${sessionId}`);
   let tickCount = 0;
@@ -1792,6 +1939,7 @@ function canWriteLocally() {
   }
 
   // 3. LOCAL mode → try saved credentials, then show login
+  $("#login-screen").style.display = "";
   try {
     const savedKeyId = localStorage.getItem("kalshi_key_id");
     const savedPem = localStorage.getItem("kalshi_pem");

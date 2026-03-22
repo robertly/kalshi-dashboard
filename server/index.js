@@ -83,6 +83,7 @@ if (ENV_MODE) {
 const sessions = {};
 const authedWriteTokens = new Set(); // password-authenticated write tokens
 let envSessionId = null;
+let espnCache = { data: null, ts: 0 }; // 30s ESPN score cache
 
 if (ENV_MODE) {
   envSessionId = "env-" + crypto.randomBytes(8).toString("hex");
@@ -258,6 +259,87 @@ const server = http.createServer(async (req, res) => {
         if (session.sseClients) session.sseClients = session.sseClients.filter(c => c !== res);
       });
       return;
+    }
+
+    // ═══ GET /api/scores — ESPN live scores proxy with caching ═══
+    if (pathname === "/api/scores" && method === "GET") {
+      const now = Date.now();
+      if (espnCache.data && now - espnCache.ts < 30000) {
+        return sendJson(res, 200, espnCache.data);
+      }
+      try {
+        const [wta, atp, ufc, ncaamb] = await Promise.all([
+          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/tennis/wta/scoreboard", method: "GET", headers: {} }),
+          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/tennis/atp/scoreboard", method: "GET", headers: {} }),
+          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/mma/ufc/scoreboard", method: "GET", headers: {} }),
+          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard", method: "GET", headers: {} }),
+        ]);
+        const matches = [];
+        // Tennis — extract from groupings
+        [wta.body, atp.body].forEach(d => {
+          (d.events || []).forEach(ev => {
+            (ev.groupings || []).forEach(g => {
+              (g.competitions || []).forEach(c => {
+                const comps = c.competitors || [];
+                if (comps.length === 2) {
+                  matches.push({
+                    sport: "tennis",
+                    status: c.status?.type?.name || "",
+                    detail: c.status?.type?.detail || "",
+                    p1: comps[0].athlete?.displayName || "",
+                    p2: comps[1].athlete?.displayName || "",
+                    s1: comps[0].linescores?.map(s => s.value) || [],
+                    s2: comps[1].linescores?.map(s => s.value) || [],
+                    w1: !!comps[0].winner,
+                    w2: !!comps[1].winner,
+                  });
+                }
+              });
+            });
+          });
+        });
+        // UFC — from competitions
+        (ufc.body.events || []).forEach(ev => {
+          (ev.competitions || []).forEach(c => {
+            const comps = c.competitors || [];
+            if (comps.length === 2) {
+              matches.push({
+                sport: "mma",
+                status: c.status?.type?.name || "",
+                detail: c.status?.type?.detail || c.status?.type?.shortDetail || "",
+                p1: comps[0].athlete?.displayName || "",
+                p2: comps[1].athlete?.displayName || "",
+                w1: !!comps[0].winner,
+                w2: !!comps[1].winner,
+              });
+            }
+          });
+        });
+        // NCAAMB — from events > competitions
+        (ncaamb.body.events || []).forEach(ev => {
+          const c = ev.competitions?.[0];
+          if (!c) return;
+          const comps = c.competitors || [];
+          if (comps.length === 2) {
+            matches.push({
+              sport: "ncaamb",
+              status: c.status?.type?.name || "",
+              detail: c.status?.type?.detail || "",
+              p1: comps[0].team?.shortDisplayName || comps[0].team?.displayName || "",
+              p2: comps[1].team?.shortDisplayName || comps[1].team?.displayName || "",
+              score1: comps[0].score || "",
+              score2: comps[1].score || "",
+              w1: !!comps[0].winner,
+              w2: !!comps[1].winner,
+            });
+          }
+        });
+        espnCache = { data: { matches }, ts: now };
+        return sendJson(res, 200, espnCache.data);
+      } catch(e) {
+        console.error("[espn] Error:", e.message);
+        return sendJson(res, 500, { error: "ESPN fetch failed" });
+      }
     }
 
     // ═══ Proxy /api/kalshi/* ═══
