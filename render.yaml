@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: kalshi-dashboard
+    runtime: node
+    buildCommand: ""
+    startCommand: node server/index.js
+    envVars:
+      - key: KALSHI_KEY_ID
+        sync: false
+      - key: KALSHI_PRIVATE_KEY
+        sync: false
+      - key: KALSHI_PASSWORD
+        sync: false

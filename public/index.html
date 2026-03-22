@@ -534,6 +534,13 @@
     display: flex; justify-content: space-between; align-items: center;
     margin-top: 10px; font-size: 11px; color: var(--text-dim);
   }
+  .kalshi-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 12px; font-weight: 600; color: var(--gold);
+    text-decoration: none; padding: 4px 0;
+    transition: opacity 0.15s;
+  }
+  .kalshi-link:hover { opacity: 0.7; }
 
   /* ─── LEG ODDS & QUICK TRADE ─── */
   .leg-odds-row {
@@ -798,6 +805,22 @@ const esc = (s) => {
   return d.innerHTML;
 };
 
+// Build Kalshi web URL for an event (opens in app on mobile via universal links)
+// URL pattern: https://kalshi.com/markets/{series_ticker}/{series_title_slug}/{event_ticker}
+let seriesCache = {}; // series_ticker -> series object
+
+function getKalshiURL(eventTicker) {
+  const ev = eventCache[eventTicker];
+  if (!ev) return "https://kalshi.com";
+  const seriesTicker = (ev.series_ticker || "").toLowerCase();
+  const eventTickerLower = (eventTicker || "").toLowerCase();
+  const series = seriesCache[ev.series_ticker];
+  const seriesSlug = series?.title
+    ? series.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")
+    : seriesTicker;
+  return `https://kalshi.com/markets/${seriesTicker}/${seriesSlug}/${eventTickerLower}`;
+}
+
 // Find the initial entry (first buy fill) for a given market ticker
 function getEntryFill(ticker) {
   if (!fills?.fills) return null;
@@ -850,7 +873,8 @@ function formatComboTitle(title, legs) {
         const legSide = (legs[i].side || "yes").toLowerCase();
         const legTicker = legs[i].market_ticker || "";
         const legEventTicker = legs[i].event_ticker || "";
-        const scoreBadge = formatScoreBadge(legEventTicker, name);
+        const scoreBadgeInner = formatScoreBadge(legEventTicker, name);
+        const scoreBadge = `<span data-score-event="${esc(legEventTicker)}" data-score-name="${esc(name)}">${scoreBadgeInner}</span>`;
 
         // Settled leg — show ✓ or ✗, no live data needed
         if (isMarketDone(legMkt)) {
@@ -888,7 +912,7 @@ function formatComboTitle(title, legs) {
             else { arrowChar = "─"; arrowColor = "var(--gold)"; }
           }
 
-          return `<span style="color:${color};font-weight:700;font-size:12px">${side} <span data-ticker="${esc(legTicker)}" data-field="title-price" data-side="${legSide}" style="font-family:var(--mono);font-size:11px;opacity:0.8">${curCents}</span></span> ${esc(name)}${scoreBadge} <span data-ticker="${esc(legTicker)}" data-field="title-arrow" data-side="${legSide}" style="font-size:12px;color:${arrowColor}">${arrowChar}</span> <span data-ticker="${esc(legTicker)}" data-field="title-prev" data-side="${legSide}" style="font-family:var(--mono);font-size:11px">${prevCents}</span>`;
+          return `<span style="color:${color};font-weight:700;font-size:12px">${side} <span data-ticker="${esc(legTicker)}" data-field="title-prev" data-side="${legSide}" style="font-family:var(--mono);font-size:11px;opacity:0.8">${prevCents}</span></span> ${esc(name)}${scoreBadge} <span data-ticker="${esc(legTicker)}" data-field="title-arrow" data-side="${legSide}" style="font-size:12px;color:${arrowColor}">${arrowChar}</span> <span data-ticker="${esc(legTicker)}" data-field="title-price" data-side="${legSide}" style="font-family:var(--mono);font-size:11px">${curCents}</span>`;
         }
       }
 
@@ -1115,6 +1139,17 @@ async function fetchAll() {
       } catch(e) {}
     }));
 
+    // ── Step 3b: Fetch series details for Kalshi URLs ──
+    const seriesTickers = new Set();
+    Object.values(eventCache).forEach(ev => { if (ev.series_ticker) seriesTickers.add(ev.series_ticker); });
+    const missingSeries = [...seriesTickers].filter(s => !seriesCache[s]);
+    await Promise.allSettled(missingSeries.map(async s => {
+      try {
+        const r = await api("GET", `/series/${s}`);
+        seriesCache[s] = r.series || r;
+      } catch(e) {}
+    }));
+
     // ── Step 4: Fetch live scores via Kalshi milestones ──
     await fetchLiveScores();
 
@@ -1177,17 +1212,41 @@ function extractSurname(fullName) {
   return surname.replace(/[^a-z]/g, "");
 }
 
+// Extract a clean name for matching — handles both people and teams
+function extractMatchName(rawName) {
+  if (!rawName) return "";
+  // Strip parenthetical like "(FL)" and trim
+  return rawName.replace(/\s*\([^)]*\)\s*/g, " ").trim().toLowerCase().replace(/[^a-z\s]/g, "").trim();
+}
+
 function findESPNMatch(eventTitle) {
   if (!eventTitle) return null;
   const clean = eventTitle.replace(/^.*:\s*/, "");
-  const parts = clean.split(/\s+vs\.?\s+/i);
-  const names = parts.map(p => extractSurname(p)).filter(n => n.length > 2);
-  if (names.length < 2) return null;
-  const candidates = espnByName[names[0]] || [];
-  return candidates.find(m => {
-    const mNames = [extractSurname(m.p1), extractSurname(m.p2)];
-    return names.every(n => mNames.includes(n));
-  }) || null;
+  // Split on "vs", "vs.", or "at" (for basketball "X at Y")
+  const parts = clean.split(/\s+(?:vs\.?|at)\s+/i).map(p => p.trim()).filter(Boolean);
+  if (parts.length < 2) return null;
+
+  // Try surname matching first (works for tennis/UFC)
+  const surnames = parts.map(p => extractSurname(p)).filter(n => n.length > 2);
+  if (surnames.length >= 2) {
+    const candidates = espnByName[surnames[0]] || [];
+    const match = candidates.find(m => {
+      const mNames = [extractSurname(m.p1), extractSurname(m.p2)];
+      return surnames.every(n => mNames.includes(n));
+    });
+    if (match) return match;
+  }
+
+  // Try full name matching (works for teams like "Miami" at "Purdue")
+  const cleanNames = parts.map(p => extractMatchName(p));
+  for (const m of espnMatchList) {
+    const mp1 = (m.p1 || "").toLowerCase();
+    const mp2 = (m.p2 || "").toLowerCase();
+    const bothMatch = cleanNames.every(cn => mp1.includes(cn) || mp2.includes(cn));
+    if (bothMatch) return m;
+  }
+
+  return null;
 }
 
 function getLiveScore(eventTicker) {
@@ -1199,43 +1258,63 @@ function getLiveScore(eventTicker) {
 
 // Format inline score badge — prefer ESPN (real-time), fall back to Kalshi
 function formatScoreBadge(eventTicker, playerName) {
-  // Try ESPN first (faster, more up-to-date)
   const ms = milestoneMap[eventTicker];
   const eventTitle = ms?.title || "";
   const espn = findESPNMatch(eventTitle);
-  if (espn) return formatESPNBadge(espn);
+  if (espn) return formatESPNBadge(espn, eventTitle);
 
-  // Fall back to Kalshi live_data
   const score = getLiveScore(eventTicker);
   if (!score || !score.liveData) return "";
   return formatKalshiBadge(score);
 }
 
-function formatESPNBadge(m) {
+function formatESPNBadge(m, eventTitle) {
   const status = m.status || "";
   const isDone = status === "STATUS_FINAL";
   const isLive = status === "STATUS_IN_PROGRESS";
 
+  // Determine if ESPN's p1 matches the first name in the Kalshi title
+  // If not, swap scores so they match Kalshi's order
+  let swapped = false;
+  if (eventTitle) {
+    const parts = eventTitle.replace(/^.*:\s*/, "").split(/\s+(?:vs\.?|at)\s+/i);
+    const kalshiFirst = extractMatchName(parts[0] || "");
+    const espnP1clean = (m.p1 || "").toLowerCase();
+    const espnP2clean = (m.p2 || "").toLowerCase();
+    // Check if Kalshi's first name matches ESPN's p1 or p2
+    if (kalshiFirst) {
+      const p1Match = espnP1clean.includes(kalshiFirst) || kalshiFirst.includes(espnP1clean);
+      const p2Match = espnP2clean.includes(kalshiFirst) || kalshiFirst.includes(espnP2clean);
+      if (p2Match && !p1Match) swapped = true;
+    }
+  }
+
   if (m.sport === "tennis") {
-    const s1 = m.s1 || []; const s2 = m.s2 || [];
-    if (s1.length === 0 && !isLive && !isDone) return `<span class="score-badge score-sched">Sched</span>`;
-    const setStrs = s1.map((s, i) => `${s}-${s2[i] ?? ""}`);
+    const sa = swapped ? (m.s2 || []) : (m.s1 || []);
+    const sb = swapped ? (m.s1 || []) : (m.s2 || []);
+    const wa = swapped ? m.w2 : m.w1;
+    if (sa.length === 0 && !isLive && !isDone) return `<span class="score-badge score-sched">Sched</span>`;
+    if (sa.length === 0) return "";
+    const setStrs = sa.map((s, i) => `${s}-${sb[i] ?? ""}`);
     const text = setStrs.join(" ");
-    if (isDone) return `<span class="score-badge ${m.w1 ? "score-won" : "score-lost"}">${text} ${m.w1 ? "W" : "L"}</span>`;
+    if (isDone) return `<span class="score-badge ${wa ? "score-won" : "score-lost"}">${text} ${wa ? "W" : "L"}</span>`;
     if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>${text} ${m.detail || ""}</span>`;
     return "";
   }
 
   if (m.sport === "mma") {
-    if (isDone) return `<span class="score-badge ${m.w1 ? "score-won" : "score-lost"}">${m.detail || "Final"}</span>`;
+    const wa = swapped ? m.w2 : m.w1;
+    if (isDone) return `<span class="score-badge ${wa ? "score-won" : "score-lost"}">${m.detail || "Final"}</span>`;
     if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>LIVE</span>`;
     return `<span class="score-badge score-sched">Sched</span>`;
   }
 
   if (m.sport === "ncaamb") {
-    const s1 = m.score1 || "0"; const s2 = m.score2 || "0";
-    if (isDone) return `<span class="score-badge ${m.w1 ? "score-won" : "score-lost"}">${s1}-${s2} Final</span>`;
-    if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>${s1}-${s2} ${m.detail || ""}</span>`;
+    const sa = swapped ? (m.score2 || "0") : (m.score1 || "0");
+    const sb = swapped ? (m.score1 || "0") : (m.score2 || "0");
+    const wa = swapped ? m.w2 : m.w1;
+    if (isDone) return `<span class="score-badge ${wa ? "score-won" : "score-lost"}">${sa}-${sb} Final</span>`;
+    if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>${sa}-${sb} ${m.detail || ""}</span>`;
     return `<span class="score-badge score-sched">Sched</span>`;
   }
   return "";
@@ -1435,8 +1514,24 @@ function startScoreRefresh() {
   if (scoreRefreshInterval) clearInterval(scoreRefreshInterval);
   scoreRefreshInterval = setInterval(async () => {
     await fetchLiveScores();
-    renderAllTabs();
+    updateScoreBadgesInDOM();
   }, 30000);
+}
+
+// Update score badges in-place without full re-render (prevents scroll jump)
+function updateScoreBadgesInDOM() {
+  document.querySelectorAll("[data-score-event]").forEach(el => {
+    const eventTicker = el.dataset.scoreEvent;
+    const name = el.dataset.scoreName || "";
+    const newBadge = formatScoreBadge(eventTicker, name);
+    if (el.innerHTML !== newBadge) el.innerHTML = newBadge;
+  });
+  // Also update expanded score cards
+  document.querySelectorAll("[data-scorecard-event]").forEach(el => {
+    const eventTicker = el.dataset.scorecardEvent;
+    const newCard = renderScoreCard(eventTicker);
+    if (newCard && el.innerHTML !== newCard) el.innerHTML = newCard;
+  });
 }
 
 // ═══════════════════════════════════════════════
@@ -1799,10 +1894,6 @@ function renderCombos() {
                 </div>
               </div>
             </div>
-            <div class="combo-stat">
-              <span class="combo-stat-label">P&L</span>
-              <span class="combo-stat-val" style="color:${pnl >= 0 ? "var(--green)" : "var(--red)"}">${pnl >= 0 ? "+" : ""}${pnl.toFixed(4)}</span>
-            </div>
           </div>
         </div>
 
@@ -1860,9 +1951,9 @@ function renderCombos() {
             </div>
           </div>
 
-          ${renderScoreCard(leg.event_ticker)}
+          <div data-scorecard-event="${esc(leg.event_ticker)}">${renderScoreCard(leg.event_ticker)}</div>
 
-          ${!legSettled && legMkt ? `
+          ${!legSettled && legMkt && canWriteLocally() ? `
           <div class="leg-odds-row" style="margin-left:62px">
             <div class="odds-box">
               <div class="odds-side odds-yes">
@@ -1880,15 +1971,17 @@ function renderCombos() {
             </div>
             <span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)" data-ticker="${esc(leg.market_ticker)}" data-field="last">Last: ${lastPrice}¢</span>
             <div style="flex:1"></div>
-            ${canWriteLocally() ? `
             <button class="leg-trade-btn buy-yes" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','yes','buy',${yesAsk === "—" ? 50 : yesAsk})">Buy Yes</button>
             <button class="leg-trade-btn buy-no" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','no','buy',${noAsk === "—" ? 50 : noAsk})">Buy No</button>
             <button class="leg-trade-btn buy-yes" style="opacity:0.6" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','yes','sell',${yesBid === "—" ? 50 : yesBid})">Sell Yes</button>
             <button class="leg-trade-btn buy-no" style="opacity:0.6" onclick="openLegTrade('${legId}','${esc(leg.market_ticker)}','no','sell',${noBid === "—" ? 50 : noBid})">Sell No</button>
-            ` : ""}
           </div>
           <div id="qt-${legId}" style="margin-left:62px"></div>
           ` : ""}
+
+          <div style="text-align:right;margin:4px 0 2px;padding-right:4px">
+            <a href="${getKalshiURL(leg.event_ticker)}" target="_blank" rel="noopener" class="kalshi-link">View on Kalshi ↗</a>
+          </div>
         </div>`;
       });
 
