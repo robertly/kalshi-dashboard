@@ -426,6 +426,13 @@
     .singles-title { font-size: 14px; }
     .single-title { font-size: 13px; }
 
+    /* Score cards */
+    .score-card { margin-left: 0 !important; padding: 10px 12px; }
+    .score-card-header { flex-wrap: wrap; }
+    .score-player-name { font-size: 12px; }
+    .score-set-box { width: 22px; height: 22px; font-size: 11px; }
+    .score-pct-box { padding: 3px 8px; font-size: 12px; min-width: 40px; }
+
     /* Password modal */
     #password-modal > div { margin: 12px; padding: 20px; }
   }
@@ -451,7 +458,7 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--text-dim); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.6s linear infinite; }
 
-  /* ─── SCORE BADGES ─── */
+  /* ─── SCORE BADGES (inline in title) ─── */
   .score-badge {
     display: inline-block; font-family: var(--mono); font-size: 10px; font-weight: 700;
     padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;
@@ -463,6 +470,70 @@
   .score-sched { background: var(--bg-elevated); color: var(--text-dim); }
   .score-live-dot { animation: pulse 1.2s ease-in-out infinite; margin-right: 2px; font-size: 8px; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* ─── KALSHI-STYLE SCORE CARD (expanded view) ─── */
+  .score-card {
+    background: var(--bg-elevated); border: 1px solid var(--border-subtle);
+    border-radius: 10px; padding: 14px 16px; margin: 8px 0 8px 36px;
+  }
+  .score-card-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+  }
+  .score-card-title { font-size: 13px; font-weight: 700; flex: 1; }
+  .score-live-badge {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 10px; font-weight: 800; color: var(--red); letter-spacing: 0.5px;
+  }
+  .score-live-badge::before {
+    content: ""; display: inline-block; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--red);
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  .score-final-badge {
+    font-size: 10px; font-weight: 700; color: var(--text-dim);
+    background: var(--bg-card); padding: 2px 8px; border-radius: 4px;
+  }
+  .score-card-time { font-size: 11px; color: var(--text-dim); }
+  .score-player {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+  }
+  .score-player + .score-player { border-top: 1px solid var(--border-subtle); }
+  .score-player-name {
+    flex: 1; font-size: 14px; font-weight: 600; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .score-player-name.winner { color: var(--green); }
+  .score-player-bar {
+    height: 3px; border-radius: 2px; margin-top: 2px;
+  }
+  .score-player-bar.leading { background: var(--green); }
+  .score-player-bar.trailing { background: var(--border-subtle); }
+  .score-serving-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+    flex-shrink: 0;
+  }
+  .score-serving-dot.hidden { visibility: hidden; }
+  .score-sets {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .score-set-box {
+    width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+    background: var(--bg-card); border: 1px solid var(--border-subtle);
+    border-radius: 5px; font-family: var(--mono); font-size: 13px; font-weight: 700;
+    color: var(--text);
+  }
+  .score-set-box.current { border-color: var(--gold); color: var(--gold); }
+  .score-set-box.won { color: var(--green); }
+  .score-pct-box {
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px 12px; border-radius: 20px; border: 1.5px solid var(--green);
+    font-family: var(--mono); font-size: 14px; font-weight: 700;
+    color: var(--green); min-width: 50px; margin-left: 8px;
+  }
+  .score-footer {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px; font-size: 11px; color: var(--text-dim);
+  }
 
   /* ─── LEG ODDS & QUICK TRADE ─── */
   .leg-odds-row {
@@ -709,9 +780,8 @@ let fills = null;
 let marketCache = {};
 let eventCache = {};
 let milestoneCache = {}; // event_ticker -> milestone object
-let liveDataCache = {};  // event_ticker -> live_data object (scores etc)
-let espnMatches = [];    // ESPN scoreboard matches
-let espnByName = {};     // surname -> ESPN match (for quick lookup)
+let liveDataCache = {};  // milestone_id -> live_data object
+let milestoneMap = {};   // event_ticker -> milestone (from /api/scores)
 let activeTab = "combos";
 let expandedCombos = new Set(); // Track which combo cards are expanded
 let openLegTrades = {}; // Track which leg trade forms are open: { legId: {ticker, side, action, price} }
@@ -779,9 +849,8 @@ function formatComboTitle(title, legs) {
         const legMkt = legs[i].marketInfo;
         const legSide = (legs[i].side || "yes").toLowerCase();
         const legTicker = legs[i].market_ticker || "";
-        const legEventTitle = legs[i].eventInfo?.title || "";
-        const espnMatch = findESPNMatch(legEventTitle);
-        const scoreBadge = espnMatch ? formatScoreBadge(espnMatch, name) : "";
+        const legEventTicker = legs[i].event_ticker || "";
+        const scoreBadge = formatScoreBadge(legEventTicker, name);
 
         // Settled leg — show ✓ or ✗, no live data needed
         if (isMarketDone(legMkt)) {
@@ -1046,8 +1115,8 @@ async function fetchAll() {
       } catch(e) {}
     }));
 
-    // ── Step 4: Fetch ESPN live scores ──
-    await fetchESPNScores();
+    // ── Step 4: Fetch live scores via Kalshi milestones ──
+    await fetchLiveScores();
 
     updateBalanceCards();
     renderAllTabs();
@@ -1061,115 +1130,235 @@ async function fetchAll() {
 }
 
 // ═══════════════════════════════════════════════
-//  ESPN LIVE SCORES
+//  KALSHI LIVE SCORES (via milestones + live_data)
 // ═══════════════════════════════════════════════
-function extractSurname(fullName) {
-  if (!fullName) return "";
-  const words = fullName.trim().split(/\s+/);
-  let surname = words[words.length - 1].toLowerCase();
-  // Handle Jr, Sr, III etc
-  if (surname === "jr" || surname === "jr." || surname === "sr" || surname === "sr." || surname === "ii" || surname === "iii" || surname === "iv") {
-    surname = words.length > 1 ? words[words.length - 2].toLowerCase() : surname;
-  }
-  return surname.replace(/[^a-z]/g, "");
-}
-
-function extractNamesFromTitle(title) {
-  if (!title) return [];
-  const clean = title.replace(/^.*:\s*/, ""); // strip "UFC Fight Night: " etc
-  const parts = clean.split(/\s+vs\.?\s+/i);
-  return parts.map(p => extractSurname(p)).filter(n => n.length > 2);
-}
-
-async function fetchESPNScores() {
+async function fetchLiveScores() {
   try {
-    const res = await fetch("/api/scores");
+    // Collect all event tickers from our positions
+    const { combos, regulars } = getComboAndRegularPositions();
+    const eventTickers = new Set();
+    combos.forEach(c => c.legs.forEach(l => { if (l.event_ticker) eventTickers.add(l.event_ticker); }));
+    regulars.forEach(r => { if (r.marketInfo?.event_ticker) eventTickers.add(r.marketInfo.event_ticker); });
+
+    const headers = { "X-Session-Id": sessionId };
+    const eventsParam = [...eventTickers].join(",");
+    const res = await fetch(`/api/scores?events=${encodeURIComponent(eventsParam)}`, { headers });
     if (!res.ok) return;
     const data = await res.json();
-    espnMatches = data.matches || [];
-    // Build surname index — map surname to array of matches containing that name
-    espnByName = {};
-    espnMatches.forEach(m => {
-      [m.p1, m.p2].forEach(name => {
-        const sn = extractSurname(name);
-        if (sn.length > 2) {
-          if (!espnByName[sn]) espnByName[sn] = [];
-          espnByName[sn].push(m);
-        }
-      });
-    });
+    milestoneMap = data.milestones || {};
+    // Merge live data
+    const ld = data.liveData || {};
+    for (const [msId, val] of Object.entries(ld)) {
+      liveDataCache[msId] = val;
+    }
   } catch(e) {
-    console.warn("[espn] Score fetch failed:", e.message);
+    console.warn("[scores] Fetch failed:", e.message);
   }
 }
 
-// Find ESPN match for a Kalshi event title by matching BOTH player surnames
-function findESPNMatch(eventTitle) {
-  const names = extractNamesFromTitle(eventTitle);
-  if (names.length < 2) return null;
-  // Find a match where both names appear
-  const candidates = espnByName[names[0]] || [];
-  return candidates.find(m => {
-    const mNames = [extractSurname(m.p1), extractSurname(m.p2)];
-    return names.every(n => mNames.includes(n));
-  }) || null;
+function getLiveScore(eventTicker) {
+  const ms = milestoneMap[eventTicker];
+  if (!ms) return null;
+  const ld = liveDataCache[ms.id];
+  return { milestone: ms, liveData: ld?.details || null };
 }
 
-// Format score badge for display
-function formatScoreBadge(match, playerName) {
-  if (!match) return "";
-  const sn = extractSurname(playerName);
-  const isP1 = extractSurname(match.p1) === sn;
-  const status = match.status || "";
-  const detail = match.detail || "";
+// Format inline score badge for combo title
+function formatScoreBadge(eventTicker, playerName) {
+  const score = getLiveScore(eventTicker);
+  if (!score || !score.liveData) return "";
+  const d = score.liveData;
+  const status = d.status || "";
 
-  if (match.sport === "tennis") {
-    const mySets = isP1 ? match.s1 : match.s2;
-    const oppSets = isP1 ? match.s2 : match.s1;
-    if (!mySets || mySets.length === 0) {
-      if (status === "STATUS_SCHEDULED") return `<span class="score-badge score-sched">Sched</span>`;
-      return "";
-    }
-    const setStrs = mySets.map((s, i) => {
-      const opp = oppSets?.[i] ?? "";
-      return `${s}-${opp}`;
-    });
-    const scoreText = setStrs.join(" ");
-    const won = isP1 ? match.w1 : match.w2;
-    const lost = (isP1 ? match.w2 : match.w1);
-    if (status === "STATUS_FINAL") {
+  // Tennis: show set scores
+  if (score.milestone.type === "tennis_tournament_singles") {
+    const r1 = d.competitor1_round_scores || [];
+    const r2 = d.competitor2_round_scores || [];
+    if (r1.length === 0 && status === "not_started") return `<span class="score-badge score-sched">Sched</span>`;
+    if (r1.length === 0) return "";
+    const s1 = r1.map(r => r.score).join(" ");
+    const s2 = r2.map(r => r.score).join(" ");
+    const c1Game = d.competitor1_current_round_score || 0;
+    const c2Game = d.competitor2_current_round_score || 0;
+    const sets1 = d.competitor1_overall_score || 0;
+    const sets2 = d.competitor2_overall_score || 0;
+    const scoreText = `${sets1}-${sets2}`;
+    if (status === "closed" || status === "complete") {
+      const won = sets1 > sets2;
       return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${scoreText} ${won ? "W" : "L"}</span>`;
     }
-    // In progress
-    return `<span class="score-badge score-live">${scoreText} <span class="score-live-dot">●</span>${detail}</span>`;
+    return `<span class="score-badge score-live"><span class="score-live-dot">●</span> ${scoreText} (${c1Game}-${c2Game})</span>`;
   }
 
-  if (match.sport === "mma") {
-    const won = isP1 ? match.w1 : match.w2;
-    const lost = isP1 ? match.w2 : match.w1;
-    if (status === "STATUS_FINAL") {
-      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${won ? "W" : "L"} ${detail}</span>`;
+  // MMA
+  if (score.milestone.type?.includes("mma") || score.milestone.type?.includes("ufc")) {
+    if (status === "closed" || status === "complete") {
+      const w1 = d.competitor1_overall_score > d.competitor2_overall_score;
+      return `<span class="score-badge ${w1 ? "score-won" : "score-lost"}">${w1 ? "W" : "L"}</span>`;
     }
-    if (status === "STATUS_IN_PROGRESS") {
-      return `<span class="score-badge score-live">LIVE ${detail}</span>`;
-    }
-    if (status === "STATUS_SCHEDULED") return `<span class="score-badge score-sched">Sched</span>`;
-    return "";
+    if (status !== "not_started") return `<span class="score-badge score-live"><span class="score-live-dot">●</span> LIVE</span>`;
+    return `<span class="score-badge score-sched">Sched</span>`;
   }
 
-  if (match.sport === "ncaamb") {
-    const myScore = isP1 ? match.score1 : match.score2;
-    const oppScore = isP1 ? match.score2 : match.score1;
-    const won = isP1 ? match.w1 : match.w2;
-    if (status === "STATUS_FINAL") {
-      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${myScore}-${oppScore} ${won ? "W" : "L"}</span>`;
+  // Basketball
+  if (score.milestone.type?.includes("basketball")) {
+    const s1 = d.home_overall_score || d.competitor1_overall_score || 0;
+    const s2 = d.away_overall_score || d.competitor2_overall_score || 0;
+    if (status === "closed" || status === "complete") {
+      const won = s1 > s2;
+      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${s1}-${s2} ${won ? "W" : "L"}</span>`;
     }
-    if (status === "STATUS_IN_PROGRESS") {
-      return `<span class="score-badge score-live">${myScore}-${oppScore} ${detail}</span>`;
-    }
-    if (status === "STATUS_SCHEDULED") return `<span class="score-badge score-sched">Sched</span>`;
-    return "";
+    if (status !== "not_started") return `<span class="score-badge score-live"><span class="score-live-dot">●</span> ${s1}-${s2}</span>`;
+    return `<span class="score-badge score-sched">Sched</span>`;
   }
+
+  return "";
+}
+
+// Render Kalshi-style expanded score card
+function renderScoreCard(eventTicker) {
+  const score = getLiveScore(eventTicker);
+  if (!score) return "";
+  const ms = score.milestone;
+  const d = score.liveData;
+  if (!d) return `<div class="score-card"><div style="color:var(--text-dim);font-size:12px">Score data loading...</div></div>`;
+
+  const status = d.status || "";
+  const type = ms.type || "";
+
+  if (type === "tennis_tournament_singles") {
+    const r1 = d.competitor1_round_scores || [];
+    const r2 = d.competitor2_round_scores || [];
+    const c1Game = d.competitor1_current_round_score || 0;
+    const c2Game = d.competitor2_current_round_score || 0;
+    const sets1 = d.competitor1_overall_score || 0;
+    const sets2 = d.competitor2_overall_score || 0;
+    const servingId = d.serving_competitor_id || "";
+    const c1Id = d.competitor1_id || "";
+    const isLive = status !== "not_started" && status !== "closed" && status !== "complete";
+    const isDone = status === "closed" || status === "complete";
+    const c1Serving = servingId && servingId === c1Id;
+    const c2Serving = servingId && servingId !== c1Id && servingId !== "";
+
+    // Get player names from milestone title "P1 vs P2"
+    const names = (ms.title || "").split(/\s+vs\.?\s+/i);
+    const p1Name = names[0] || "Player 1";
+    const p2Name = names[1] || "Player 2";
+    const c1Won = isDone && sets1 > sets2;
+    const c2Won = isDone && sets2 > sets1;
+
+    // Build set boxes
+    const maxSets = Math.max(r1.length, r2.length, 1);
+    let p1Sets = "", p2Sets = "";
+    for (let i = 0; i < maxSets; i++) {
+      const s1 = r1[i]?.score ?? "";
+      const s2 = r2[i]?.score ?? "";
+      const isCurrentSet = isLive && i === maxSets - 1;
+      const s1Won = r1[i]?.outcome === "winner";
+      const s2Won = r2[i]?.outcome === "winner";
+      p1Sets += `<div class="score-set-box${isCurrentSet ? " current" : ""}${s1Won ? " won" : ""}">${s1}</div>`;
+      p2Sets += `<div class="score-set-box${isCurrentSet ? " current" : ""}${s2Won ? " won" : ""}">${s2}</div>`;
+    }
+    // Current game score box
+    if (isLive) {
+      p1Sets += `<div class="score-set-box current">${c1Game}</div>`;
+      p2Sets += `<div class="score-set-box current">${c2Game}</div>`;
+    }
+
+    // Get market prices for the % box
+    const relatedEvent = ms.related_event_tickers?.[0] || eventTicker;
+    // Find markets for this event
+    let p1Pct = "", p2Pct = "";
+    for (const [tk, mkt] of Object.entries(marketCache)) {
+      if (mkt.event_ticker === relatedEvent) {
+        const yesAsk = parseFloat(mkt.yes_ask_dollars || 0);
+        if (yesAsk > 0 && yesAsk < 1) {
+          if (!p1Pct) { p1Pct = Math.round(yesAsk * 100) + "%"; p2Pct = Math.round((1 - yesAsk) * 100) + "%"; }
+        }
+      }
+    }
+
+    const statusBadge = isLive ? `<span class="score-live-badge">LIVE</span>` :
+                         isDone ? `<span class="score-final-badge">FINAL</span>` :
+                         `<span class="score-final-badge">SCHED</span>`;
+
+    return `<div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">${esc(ms.title)}</div>
+        ${statusBadge}
+        <div class="score-card-time">${ms.start_date ? new Date(ms.start_date).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}</div>
+      </div>
+      <div class="score-player">
+        <div class="score-serving-dot${c1Serving ? "" : " hidden"}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="score-player-name${c1Won ? " winner" : ""}">${esc(p1Name)}</div>
+          <div class="score-player-bar${sets1 >= sets2 ? " leading" : " trailing"}" style="width:${Math.max(sets1 * 40, 20)}px"></div>
+        </div>
+        <div class="score-sets">${p1Sets}</div>
+        ${p1Pct ? `<div class="score-pct-box">${p1Pct}</div>` : ""}
+      </div>
+      <div class="score-player">
+        <div class="score-serving-dot${c2Serving ? "" : " hidden"}"></div>
+        <div style="flex:1;min-width:0">
+          <div class="score-player-name${c2Won ? " winner" : ""}">${esc(p2Name)}</div>
+          <div class="score-player-bar${sets2 >= sets1 ? " leading" : " trailing"}" style="width:${Math.max(sets2 * 40, 20)}px"></div>
+        </div>
+        <div class="score-sets">${p2Sets}</div>
+        ${p2Pct ? `<div class="score-pct-box">${p2Pct}</div>` : ""}
+      </div>
+    </div>`;
+  }
+
+  // Basketball score card
+  if (type.includes("basketball")) {
+    const names = (ms.title || "").split(/\s+(?:at|vs\.?)\s+/i);
+    const p1Name = names[0] || "Team 1";
+    const p2Name = names[1] || "Team 2";
+    const s1 = d.home_overall_score || d.competitor1_overall_score || 0;
+    const s2 = d.away_overall_score || d.competitor2_overall_score || 0;
+    const isLive = status !== "not_started" && status !== "closed" && status !== "complete";
+    const isDone = status === "closed" || status === "complete";
+    const statusBadge = isLive ? `<span class="score-live-badge">LIVE</span>` :
+                         isDone ? `<span class="score-final-badge">FINAL</span>` :
+                         `<span class="score-final-badge">SCHED</span>`;
+    return `<div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">${esc(ms.title)}</div>
+        ${statusBadge}
+      </div>
+      <div class="score-player">
+        <div class="score-player-name${isDone && s1 > s2 ? " winner" : ""}" style="flex:1">${esc(p1Name)}</div>
+        <div class="score-set-box" style="width:auto;padding:4px 12px;font-size:16px">${s1}</div>
+      </div>
+      <div class="score-player">
+        <div class="score-player-name${isDone && s2 > s1 ? " winner" : ""}" style="flex:1">${esc(p2Name)}</div>
+        <div class="score-set-box" style="width:auto;padding:4px 12px;font-size:16px">${s2}</div>
+      </div>
+    </div>`;
+  }
+
+  // MMA / UFC
+  if (type.includes("mma") || type.includes("ufc") || type.includes("fight")) {
+    const names = (ms.title || "").replace(/^.*:\s*/, "").split(/\s+vs\.?\s+/i);
+    const isLive = status !== "not_started" && status !== "closed" && status !== "complete";
+    const isDone = status === "closed" || status === "complete";
+    const statusBadge = isLive ? `<span class="score-live-badge">LIVE</span>` :
+                         isDone ? `<span class="score-final-badge">FINAL</span>` :
+                         `<span class="score-final-badge">SCHED</span>`;
+    return `<div class="score-card">
+      <div class="score-card-header">
+        <div class="score-card-title">${esc(ms.title)}</div>
+        ${statusBadge}
+      </div>
+      <div class="score-player">
+        <div class="score-player-name" style="flex:1">${esc(names[0] || "Fighter 1")}</div>
+      </div>
+      <div class="score-player">
+        <div class="score-player-name" style="flex:1">${esc(names[1] || "Fighter 2")}</div>
+      </div>
+    </div>`;
+  }
+
   return "";
 }
 
@@ -1178,8 +1367,7 @@ let scoreRefreshInterval = null;
 function startScoreRefresh() {
   if (scoreRefreshInterval) clearInterval(scoreRefreshInterval);
   scoreRefreshInterval = setInterval(async () => {
-    await fetchESPNScores();
-    // Re-render just the combo titles (lightweight)
+    await fetchLiveScores();
     renderAllTabs();
   }, 30000);
 }
@@ -1194,7 +1382,7 @@ function startStream() {
   if (eventSource) { eventSource.close(); }
   if (!sessionId) return;
 
-  startScoreRefresh(); // Auto-refresh ESPN scores every 30s
+  startScoreRefresh(); // Auto-refresh scores every 30s
 
   eventSource = new EventSource(`/api/stream?session=${sessionId}`);
   let tickCount = 0;
@@ -1604,6 +1792,8 @@ function renderCombos() {
               ${legEventName ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">${esc(legEventName)}</div>` : ""}
             </div>
           </div>
+
+          ${renderScoreCard(leg.event_ticker)}
 
           ${!legSettled && legMkt ? `
           <div class="leg-odds-row" style="margin-left:62px">

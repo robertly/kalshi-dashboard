@@ -261,84 +261,87 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    // ═══ GET /api/scores — ESPN live scores proxy with caching ═══
+    // ═══ GET /api/scores — Kalshi milestones + live_data for all active series ═══
     if (pathname === "/api/scores" && method === "GET") {
+      const sid = req.headers["x-session-id"] || (ENV_MODE ? envSessionId : null);
+      const session = sessions[sid];
+      if (!session) return sendJson(res, 401, { error: "Not authenticated" });
+
       const now = Date.now();
-      if (espnCache.data && now - espnCache.ts < 30000) {
+      if (espnCache.data && now - espnCache.ts < 15000) {
         return sendJson(res, 200, espnCache.data);
       }
+
+      const { apiKeyId: ak, privateKeyPem: pk, useDemoEnv: demo } = session;
+      const host = demo ? "demo-api.kalshi.co" : "api.elections.kalshi.com";
+
+      function signedGet(p) {
+        const ts = Date.now().toString();
+        const po = p.split("?")[0];
+        const sig = signRequest(pk, ts, "GET", po);
+        return httpsRequest({ hostname: host, port: 443, path: p, method: "GET", headers: {
+          "KALSHI-ACCESS-KEY": ak, "KALSHI-ACCESS-SIGNATURE": sig, "KALSHI-ACCESS-TIMESTAMP": ts,
+        }});
+      }
+
       try {
-        const [wta, atp, ufc, ncaamb] = await Promise.all([
-          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/tennis/wta/scoreboard", method: "GET", headers: {} }),
-          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/tennis/atp/scoreboard", method: "GET", headers: {} }),
-          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/mma/ufc/scoreboard", method: "GET", headers: {} }),
-          httpsRequest({ hostname: "site.api.espn.com", port: 443, path: "/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard", method: "GET", headers: {} }),
-        ]);
-        const matches = [];
-        // Tennis — extract from groupings
-        [wta.body, atp.body].forEach(d => {
-          (d.events || []).forEach(ev => {
-            (ev.groupings || []).forEach(g => {
-              (g.competitions || []).forEach(c => {
-                const comps = c.competitors || [];
-                if (comps.length === 2) {
-                  matches.push({
-                    sport: "tennis",
-                    status: c.status?.type?.name || "",
-                    detail: c.status?.type?.detail || "",
-                    p1: comps[0].athlete?.displayName || "",
-                    p2: comps[1].athlete?.displayName || "",
-                    s1: comps[0].linescores?.map(s => s.value) || [],
-                    s2: comps[1].linescores?.map(s => s.value) || [],
-                    w1: !!comps[0].winner,
-                    w2: !!comps[1].winner,
-                  });
-                }
-              });
-            });
-          });
-        });
-        // UFC — from competitions
-        (ufc.body.events || []).forEach(ev => {
-          (ev.competitions || []).forEach(c => {
-            const comps = c.competitors || [];
-            if (comps.length === 2) {
-              matches.push({
-                sport: "mma",
-                status: c.status?.type?.name || "",
-                detail: c.status?.type?.detail || c.status?.type?.shortDetail || "",
-                p1: comps[0].athlete?.displayName || "",
-                p2: comps[1].athlete?.displayName || "",
-                w1: !!comps[0].winner,
-                w2: !!comps[1].winner,
-              });
+        // Step 1: Fetch milestones for active series via events endpoint
+        const series = (parsed.query.series || "KXWTAMATCH,KXATPMATCH,KXUFCFIGHT,KXNCAAMBGAME").split(",");
+        const allMilestones = [];
+        await Promise.all(series.map(async s => {
+          let cursor = "";
+          for (let i = 0; i < 3; i++) {
+            const p = `/trade-api/v2/events?series_ticker=${s}&status=open&with_milestones=true&limit=100${cursor ? "&cursor=" + encodeURIComponent(cursor) : ""}`;
+            const r = await signedGet(p);
+            if (r.status === 200 && r.body.milestones) {
+              allMilestones.push(...r.body.milestones);
             }
-          });
-        });
-        // NCAAMB — from events > competitions
-        (ncaamb.body.events || []).forEach(ev => {
-          const c = ev.competitions?.[0];
-          if (!c) return;
-          const comps = c.competitors || [];
-          if (comps.length === 2) {
-            matches.push({
-              sport: "ncaamb",
-              status: c.status?.type?.name || "",
-              detail: c.status?.type?.detail || "",
-              p1: comps[0].team?.shortDisplayName || comps[0].team?.displayName || "",
-              p2: comps[1].team?.shortDisplayName || comps[1].team?.displayName || "",
-              score1: comps[0].score || "",
-              score2: comps[1].score || "",
-              w1: !!comps[0].winner,
-              w2: !!comps[1].winner,
-            });
+            cursor = r.body?.cursor || "";
+            if (!cursor) break;
           }
+        }));
+
+        // Build event_ticker -> milestone map
+        const msMap = {};
+        allMilestones.forEach(m => {
+          (m.related_event_tickers || []).forEach(et => { msMap[et] = m; });
         });
-        espnCache = { data: { matches }, ts: now };
-        return sendJson(res, 200, espnCache.data);
+
+        // Step 2: Fetch live_data for milestones that the client needs
+        const requestedEvents = (parsed.query.events || "").split(",").filter(Boolean);
+        const liveData = {};
+        if (requestedEvents.length > 0) {
+          const msIds = requestedEvents.map(et => msMap[et]).filter(Boolean);
+          // Batch fetch (max 100)
+          const uniqueMs = [...new Map(msIds.map(m => [m.id, m])).values()].slice(0, 100);
+          if (uniqueMs.length > 0) {
+            // Try batch endpoint
+            const idsParam = uniqueMs.map(m => m.id).join(",");
+            try {
+              const br = await signedGet(`/trade-api/v2/live_data/batch?milestone_ids=${encodeURIComponent(idsParam)}`);
+              if (br.status === 200 && br.body.live_datas) {
+                br.body.live_datas.forEach(ld => { liveData[ld.milestone_id] = ld; });
+              }
+            } catch(e) {
+              // Fallback: fetch individually
+              await Promise.allSettled(uniqueMs.map(async m => {
+                try {
+                  const r = await signedGet(`/trade-api/v2/live_data/${encodeURIComponent(m.type)}/milestone/${encodeURIComponent(m.id)}`);
+                  if (r.status === 200 && r.body.live_data) {
+                    liveData[m.id] = r.body.live_data;
+                  }
+                } catch(e) {}
+              }));
+            }
+          }
+        }
+
+        const result = { milestones: msMap, liveData };
+        espnCache = { data: result, ts: now };
+        return sendJson(res, 200, result);
       } catch(e) {
-        console.error("[espn] Error:", e.message);
-        return sendJson(res, 500, { error: "ESPN fetch failed" });
+        console.error("[scores] Error:", e.message);
+        return sendJson(res, 500, { error: "Score fetch failed: " + e.message });
       }
     }
 
