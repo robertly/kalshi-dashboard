@@ -1134,7 +1134,6 @@ async function fetchAll() {
 // ═══════════════════════════════════════════════
 async function fetchLiveScores() {
   try {
-    // Collect all event tickers from our positions
     const { combos, regulars } = getComboAndRegularPositions();
     const eventTickers = new Set();
     combos.forEach(c => c.legs.forEach(l => { if (l.event_ticker) eventTickers.add(l.event_ticker); }));
@@ -1142,18 +1141,53 @@ async function fetchLiveScores() {
 
     const headers = { "X-Session-Id": sessionId };
     const eventsParam = [...eventTickers].join(",");
-    const res = await fetch(`/api/scores?events=${encodeURIComponent(eventsParam)}`, { headers });
+    const res = await fetch(`/api/scores?events=${eventsParam}`, { headers });
     if (!res.ok) return;
     const data = await res.json();
     milestoneMap = data.milestones || {};
-    // Merge live data
     const ld = data.liveData || {};
-    for (const [msId, val] of Object.entries(ld)) {
-      liveDataCache[msId] = val;
-    }
+    for (const [msId, val] of Object.entries(ld)) liveDataCache[msId] = val;
+    // Build ESPN name index for fast lookup
+    espnMatchList = data.espn || [];
+    espnByName = {};
+    espnMatchList.forEach(m => {
+      [m.p1, m.p2].forEach(name => {
+        const sn = extractSurname(name);
+        if (sn.length > 2) {
+          if (!espnByName[sn]) espnByName[sn] = [];
+          espnByName[sn].push(m);
+        }
+      });
+    });
   } catch(e) {
     console.warn("[scores] Fetch failed:", e.message);
   }
+}
+
+let espnMatchList = [];
+let espnByName = {};
+
+function extractSurname(fullName) {
+  if (!fullName) return "";
+  const words = fullName.trim().split(/\s+/);
+  let surname = words[words.length - 1].toLowerCase();
+  if (["jr", "jr.", "sr", "sr.", "ii", "iii", "iv"].includes(surname)) {
+    surname = words.length > 1 ? words[words.length - 2].toLowerCase() : surname;
+  }
+  return surname.replace(/[^a-z]/g, "");
+}
+
+function findESPNMatch(eventTitle) {
+  if (!eventTitle) return null;
+  const clean = eventTitle.replace(/^.*:\s*/, "");
+  const parts = clean.split(/\s+vs\.?\s+/i);
+  const names = parts.map(p => extractSurname(p)).filter(n => n.length > 2);
+  if (names.length < 2) return null;
+  const candidates = espnByName[names[0]] || [];
+  return candidates.find(m => {
+    const mNames = [extractSurname(m.p1), extractSurname(m.p2)];
+    return names.every(n => mNames.includes(n));
+  }) || null;
 }
 
 function getLiveScore(eventTicker) {
@@ -1163,52 +1197,82 @@ function getLiveScore(eventTicker) {
   return { milestone: ms, liveData: ld?.details || null };
 }
 
-// Format inline score badge for combo title
+// Format inline score badge — prefer ESPN (real-time), fall back to Kalshi
 function formatScoreBadge(eventTicker, playerName) {
+  // Try ESPN first (faster, more up-to-date)
+  const ms = milestoneMap[eventTicker];
+  const eventTitle = ms?.title || "";
+  const espn = findESPNMatch(eventTitle);
+  if (espn) return formatESPNBadge(espn);
+
+  // Fall back to Kalshi live_data
   const score = getLiveScore(eventTicker);
   if (!score || !score.liveData) return "";
-  const d = score.liveData;
-  const status = d.status || "";
+  return formatKalshiBadge(score);
+}
 
-  // Tennis: show set scores
-  if (score.milestone.type === "tennis_tournament_singles") {
-    const r1 = d.competitor1_round_scores || [];
-    const r2 = d.competitor2_round_scores || [];
-    if (r1.length === 0 && status === "not_started") return `<span class="score-badge score-sched">Sched</span>`;
-    if (r1.length === 0) return "";
-    const s1 = r1.map(r => r.score).join(" ");
-    const s2 = r2.map(r => r.score).join(" ");
-    const c1Game = d.competitor1_current_round_score || 0;
-    const c2Game = d.competitor2_current_round_score || 0;
-    const sets1 = d.competitor1_overall_score || 0;
-    const sets2 = d.competitor2_overall_score || 0;
-    const scoreText = `${sets1}-${sets2}`;
-    if (status === "closed" || status === "complete") {
-      const won = sets1 > sets2;
-      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${scoreText} ${won ? "W" : "L"}</span>`;
-    }
-    return `<span class="score-badge score-live"><span class="score-live-dot">●</span> ${scoreText} (${c1Game}-${c2Game})</span>`;
+function formatESPNBadge(m) {
+  const status = m.status || "";
+  const isDone = status === "STATUS_FINAL";
+  const isLive = status === "STATUS_IN_PROGRESS";
+
+  if (m.sport === "tennis") {
+    const s1 = m.s1 || []; const s2 = m.s2 || [];
+    if (s1.length === 0 && !isLive && !isDone) return `<span class="score-badge score-sched">Sched</span>`;
+    const setStrs = s1.map((s, i) => `${s}-${s2[i] ?? ""}`);
+    const text = setStrs.join(" ");
+    if (isDone) return `<span class="score-badge ${m.w1 ? "score-won" : "score-lost"}">${text} ${m.w1 ? "W" : "L"}</span>`;
+    if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>${text} ${m.detail || ""}</span>`;
+    return "";
   }
 
-  // MMA
-  if (score.milestone.type?.includes("mma") || score.milestone.type?.includes("ufc")) {
-    if (status === "closed" || status === "complete") {
-      const w1 = d.competitor1_overall_score > d.competitor2_overall_score;
-      return `<span class="score-badge ${w1 ? "score-won" : "score-lost"}">${w1 ? "W" : "L"}</span>`;
-    }
-    if (status !== "not_started") return `<span class="score-badge score-live"><span class="score-live-dot">●</span> LIVE</span>`;
+  if (m.sport === "mma") {
+    if (isDone) return `<span class="score-badge ${m.w1 ? "score-won" : "score-lost"}">${m.detail || "Final"}</span>`;
+    if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>LIVE</span>`;
     return `<span class="score-badge score-sched">Sched</span>`;
   }
 
-  // Basketball
-  if (score.milestone.type?.includes("basketball")) {
-    const s1 = d.home_overall_score || d.competitor1_overall_score || 0;
-    const s2 = d.away_overall_score || d.competitor2_overall_score || 0;
-    if (status === "closed" || status === "complete") {
-      const won = s1 > s2;
-      return `<span class="score-badge ${won ? "score-won" : "score-lost"}">${s1}-${s2} ${won ? "W" : "L"}</span>`;
-    }
-    if (status !== "not_started") return `<span class="score-badge score-live"><span class="score-live-dot">●</span> ${s1}-${s2}</span>`;
+  if (m.sport === "ncaamb") {
+    const s1 = m.score1 || "0"; const s2 = m.score2 || "0";
+    if (isDone) return `<span class="score-badge ${m.w1 ? "score-won" : "score-lost"}">${s1}-${s2} Final</span>`;
+    if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>${s1}-${s2} ${m.detail || ""}</span>`;
+    return `<span class="score-badge score-sched">Sched</span>`;
+  }
+  return "";
+}
+
+function formatKalshiBadge(score) {
+  const d = score.liveData;
+  const status = d.status || d.widget_status || "";
+  const isLive = status === "live" || status === "halftime" || status === "in_progress";
+  const isDone = status === "closed" || status === "complete" || status === "ended";
+  const type = score.milestone.type || "";
+
+  if (type === "tennis_tournament_singles") {
+    const r1 = d.competitor1_round_scores || [];
+    const r2 = d.competitor2_round_scores || [];
+    if (r1.length === 0 && !isLive && !isDone) return `<span class="score-badge score-sched">Sched</span>`;
+    const setStrs = r1.map((s, i) => `${s.score}-${r2[i]?.score ?? ""}`);
+    const text = setStrs.join(" ");
+    const c1g = d.competitor1_current_round_score || 0;
+    const c2g = d.competitor2_current_round_score || 0;
+    const sets1 = d.competitor1_overall_score || 0;
+    const sets2 = d.competitor2_overall_score || 0;
+    if (isDone) return `<span class="score-badge ${sets1 > sets2 ? "score-won" : "score-lost"}">${text} ${sets1 > sets2 ? "W" : "L"}</span>`;
+    const gameStr = (c1g || c2g) ? ` (${c1g}-${c2g})` : "";
+    return `<span class="score-badge score-live"><span class="score-live-dot">●</span>${text}${gameStr}</span>`;
+  }
+
+  if (type.includes("basketball")) {
+    const hp = d.home_points || 0; const ap = d.away_points || 0;
+    if (isDone) return `<span class="score-badge ${hp > ap ? "score-won" : "score-lost"}">${hp}-${ap} Final</span>`;
+    if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>${hp}-${ap} ${status === "halftime" ? "Half" : ""}</span>`;
+    return `<span class="score-badge score-sched">Sched</span>`;
+  }
+
+  if (type.includes("mma") || type.includes("ufc") || type.includes("fight")) {
+    if (isDone) return `<span class="score-badge score-won">Final</span>`;
+    if (isLive) return `<span class="score-badge score-live"><span class="score-live-dot">●</span>LIVE</span>`;
     return `<span class="score-badge score-sched">Sched</span>`;
   }
 
@@ -1233,10 +1297,10 @@ function renderScoreCard(eventTicker) {
     const c2Game = d.competitor2_current_round_score || 0;
     const sets1 = d.competitor1_overall_score || 0;
     const sets2 = d.competitor2_overall_score || 0;
-    const servingId = d.serving_competitor_id || "";
+    const servingId = d.server || d.serving_competitor_id || "";
     const c1Id = d.competitor1_id || "";
-    const isLive = status !== "not_started" && status !== "closed" && status !== "complete";
-    const isDone = status === "closed" || status === "complete";
+    const isLive = status === "live" || status === "in_progress";
+    const isDone = status === "closed" || status === "complete" || status === "ended";
     const c1Serving = servingId && servingId === c1Id;
     const c2Serving = servingId && servingId !== c1Id && servingId !== "";
 
@@ -1314,10 +1378,11 @@ function renderScoreCard(eventTicker) {
     const names = (ms.title || "").split(/\s+(?:at|vs\.?)\s+/i);
     const p1Name = names[0] || "Team 1";
     const p2Name = names[1] || "Team 2";
-    const s1 = d.home_overall_score || d.competitor1_overall_score || 0;
-    const s2 = d.away_overall_score || d.competitor2_overall_score || 0;
-    const isLive = status !== "not_started" && status !== "closed" && status !== "complete";
-    const isDone = status === "closed" || status === "complete";
+    const hp = d.home_points || 0;
+    const ap = d.away_points || 0;
+    const isLive = status === "live" || status === "halftime" || status === "in_progress";
+    const isDone = status === "closed" || status === "complete" || status === "ended";
+    const periodInfo = status === "halftime" ? "Halftime" : (d.period_remaining_time ? `${d.period_type || "P"}${d.period || ""} ${d.period_remaining_time}` : "");
     const statusBadge = isLive ? `<span class="score-live-badge">LIVE</span>` :
                          isDone ? `<span class="score-final-badge">FINAL</span>` :
                          `<span class="score-final-badge">SCHED</span>`;
@@ -1325,23 +1390,25 @@ function renderScoreCard(eventTicker) {
       <div class="score-card-header">
         <div class="score-card-title">${esc(ms.title)}</div>
         ${statusBadge}
+        ${periodInfo ? `<div class="score-card-time">${periodInfo}</div>` : ""}
       </div>
       <div class="score-player">
-        <div class="score-player-name${isDone && s1 > s2 ? " winner" : ""}" style="flex:1">${esc(p1Name)}</div>
-        <div class="score-set-box" style="width:auto;padding:4px 12px;font-size:16px">${s1}</div>
+        <div class="score-player-name${isDone && hp > ap ? " winner" : ""}" style="flex:1">${esc(p1Name)} ${d.possession === "home" ? "🏀" : ""}</div>
+        <div class="score-set-box" style="width:auto;padding:4px 12px;font-size:16px">${hp}</div>
       </div>
       <div class="score-player">
-        <div class="score-player-name${isDone && s2 > s1 ? " winner" : ""}" style="flex:1">${esc(p2Name)}</div>
-        <div class="score-set-box" style="width:auto;padding:4px 12px;font-size:16px">${s2}</div>
+        <div class="score-player-name${isDone && ap > hp ? " winner" : ""}" style="flex:1">${esc(p2Name)} ${d.possession === "away" ? "🏀" : ""}</div>
+        <div class="score-set-box" style="width:auto;padding:4px 12px;font-size:16px">${ap}</div>
       </div>
+      ${d.last_play ? `<div class="score-footer">${esc(d.last_play)}</div>` : ""}
     </div>`;
   }
 
   // MMA / UFC
   if (type.includes("mma") || type.includes("ufc") || type.includes("fight")) {
     const names = (ms.title || "").replace(/^.*:\s*/, "").split(/\s+vs\.?\s+/i);
-    const isLive = status !== "not_started" && status !== "closed" && status !== "complete";
-    const isDone = status === "closed" || status === "complete";
+    const isLive = status === "live" || status === "in_progress";
+    const isDone = status === "closed" || status === "complete" || status === "ended";
     const statusBadge = isLive ? `<span class="score-live-badge">LIVE</span>` :
                          isDone ? `<span class="score-final-badge">FINAL</span>` :
                          `<span class="score-final-badge">SCHED</span>`;
